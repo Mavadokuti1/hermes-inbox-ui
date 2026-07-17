@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Settings, BookOpen, Menu } from 'lucide-react'
 import MessageBubble from './MessageBubble'
 import AgentSelector from './AgentSelector'
+import ToolActivity from './ToolActivity'
 
 // Center chat panel: header (hamburger + agent selector + vault/settings) +
 // scrollable transcript + typing indicator.
@@ -13,6 +14,8 @@ export default function ChatArea({
   onOpenVault,
   onOpenSidebar,
   onSelectAgent,
+  onApproveTool,
+  onDenyTool,
   configured,
 }) {
   const scrollRef = useRef(null)
@@ -33,7 +36,16 @@ export default function ChatArea({
   }, [lastLen])
 
   const last = messages[messages.length - 1]
-  const showDots = busy && !(last?.role === 'assistant' && last.content)
+  const showDots =
+    busy &&
+    !(last?.role === 'assistant' && last.content) &&
+    last?.role !== 'tool_activity'
+
+  // Hide assistant turns that ended up empty (e.g. a turn that only emitted
+  // tool_calls) so the transcript doesn't show a lone avatar.
+  const visible = messages.filter(
+    (m) => !(m.role === 'assistant' && !m.streaming && !m.error && !(m.content || '').trim()),
+  )
 
   return (
     <div className="flex h-full min-w-0 flex-1 flex-col bg-gray-50">
@@ -77,17 +89,26 @@ export default function ChatArea({
           {messages.length === 0 ? (
             <EmptyState agent={agent} configured={configured} onOpenSettings={onOpenSettings} />
           ) : (
-            messages.map((m, i) => (
-              <MessageBubble
-                key={i}
-                role={m.role}
-                content={m.content}
-                error={m.error}
-                streaming={m.streaming}
-                accent={accent}
-                agent={agent}
-              />
-            ))
+            visible.map((m, i) =>
+              m.role === 'tool_activity' ? (
+                <ToolActivity
+                  key={m.callId || i}
+                  activity={m}
+                  onApprove={onApproveTool}
+                  onDeny={onDenyTool}
+                />
+              ) : (
+                <MessageBubble
+                  key={i}
+                  role={m.role}
+                  content={m.content}
+                  error={m.error}
+                  streaming={m.streaming}
+                  accent={accent}
+                  agent={agent}
+                />
+              ),
+            )
           )}
 
           {showDots && (

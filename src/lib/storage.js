@@ -11,6 +11,15 @@ const DEFAULT_SETTINGS = {
   renderUrl: 'https://mavadoclaw.onrender.com',
   apiKey: '',
   model: 'hermes-agent',
+  // Composio tool-execution config (Phase 2).
+  // mode 'proxy' (recommended): the Composio key lives server-side on the
+  // Hermes backend; the browser never sees it. mode 'direct': the browser
+  // calls Composio itself using composioApiKey (dev/testing only — exposes the
+  // key and may hit CORS).
+  composioEnabled: false,
+  composioMode: 'proxy',
+  composioApiKey: '',
+  composioEntityId: 'default',
 }
 
 export function loadSettings() {

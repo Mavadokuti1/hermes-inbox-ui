@@ -16,6 +16,8 @@ export const AGENTS = [
     role: 'Strategy & Orchestration',
     tagline: 'Brainstorm expansion, set direction, delegate execution.',
     icon: Crown,
+    // Composio toolkits this persona may use (read-heavy: docs + research).
+    toolkits: ['notion', 'googledocs'],
     accent: {
       key: 'indigo',
       avatar: 'bg-indigo-600 text-white',
@@ -42,6 +44,8 @@ reasoning in <think>...</think> before giving your final answer.`,
     role: 'Growth & Demand Gen',
     tagline: 'SEO, content, lead generation, and positioning.',
     icon: Megaphone,
+    // Composio toolkits this persona may use (outreach + distribution).
+    toolkits: ['gmail', 'twitter', 'linkedin'],
     accent: {
       key: 'rose',
       avatar: 'bg-rose-500 text-white',
@@ -67,6 +71,8 @@ answer.`,
     role: 'Engineering & Technical Expansion',
     tagline: 'Write code and expand the OS technically.',
     icon: Code2,
+    // Composio toolkits this persona may use (source control).
+    toolkits: ['github'],
     accent: {
       key: 'emerald',
       avatar: 'bg-emerald-600 text-white',

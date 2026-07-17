@@ -5,6 +5,8 @@ import Composer from './components/Composer'
 import SettingsModal from './components/SettingsModal'
 import MemoryVault from './components/MemoryVault'
 import { streamChat } from './lib/api'
+import { runToolLoop } from './lib/toolLoop'
+import { createComposioAdapter, parseToolArguments } from './lib/composio'
 import { getAgent, DEFAULT_AGENT_ID } from './lib/agents'
 import { splitThinking } from './lib/thinking'
 import { topRelevantNotes, buildSystemPrompt } from './lib/context'
@@ -36,6 +38,9 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const abortRef = useRef(null)
   const notesRef = useRef(notes)
+  // Pending tool-approval resolvers, keyed by tool_call id. The Approve/Deny
+  // buttons resolve these promises to unblock the running tool loop.
+  const approvalRef = useRef({})
 
   // Keep a ref of notes so handleSend always reads the latest without stale closure.
   useEffect(() => {
@@ -65,10 +70,56 @@ export default function App() {
   )
   const activeAgent = getAgent(activeSession?.agentId || DEFAULT_AGENT_ID)
 
+  // Composio adapter derived from settings (proxy by default; see lib/composio).
+  const composio = useMemo(
+    () =>
+      createComposioAdapter({
+        enabled: settings.composioEnabled,
+        mode: settings.composioMode,
+        apiKey: settings.composioApiKey,
+        entityId: settings.composioEntityId,
+        renderUrl: settings.renderUrl,
+        hermesApiKey: settings.apiKey,
+      }),
+    [settings],
+  )
+
   function patchSession(id, updater) {
     setSessions((prev) =>
       prev.map((s) => (s.id === id ? { ...updater(s), updatedAt: Date.now() } : s)),
     )
+  }
+
+  function appendToSession(id, msg) {
+    patchSession(id, (s) => ({ ...s, messages: [...s.messages, msg] }))
+  }
+
+  // Patch a tool_activity message in place by its call id.
+  function updateActivity(id, callId, patch) {
+    patchSession(id, (s) => ({
+      ...s,
+      messages: s.messages.map((m) =>
+        m.role === 'tool_activity' && m.callId === callId ? { ...m, ...patch } : m,
+      ),
+    }))
+  }
+
+  // Resolve a pending approval promise (Approve/Deny buttons in ToolActivity).
+  function resolveApproval(callId, approved) {
+    const resolve = approvalRef.current[callId]
+    if (resolve) {
+      delete approvalRef.current[callId]
+      resolve(approved)
+    }
+  }
+
+  function handleApproveTool(callId) {
+    updateActivity(activeId, callId, { status: 'running' })
+    resolveApproval(callId, true)
+  }
+
+  function handleDenyTool(callId) {
+    resolveApproval(callId, false)
   }
 
   function handleNew() {
@@ -109,21 +160,25 @@ export default function App() {
 
     const userMsg = { role: 'user', content: text }
 
-    // Optimistically append the user message + a streaming assistant placeholder.
+    // Optimistically append the user message. Assistant placeholders are added
+    // per model turn by the loop's onModelStart hook (a turn may repeat when
+    // tools are called).
     patchSession(id, (s) => ({
       ...s,
       title: isFirst ? deriveTitle(text) : s.title,
-      messages: [...s.messages, userMsg, { role: 'assistant', content: '', streaming: true }],
+      messages: [...s.messages, userMsg],
     }))
 
     // Build the API payload: agent system prompt + top-3 relevant memory notes,
     // then the conversation history (assistant reasoning tags stripped).
     const relevant = topRelevantNotes(notesRef.current, text, 3)
     const systemContent = buildSystemPrompt(agent, relevant)
-    const history = [...activeSession.messages, userMsg].map((m) => ({
-      role: m.role,
-      content: m.role === 'assistant' ? splitThinking(m.content).answer : m.content,
-    }))
+    const history = [...activeSession.messages, userMsg]
+      .filter((m) => m.role === 'user' || m.role === 'assistant')
+      .map((m) => ({
+        role: m.role,
+        content: m.role === 'assistant' ? splitThinking(m.content).answer : m.content,
+      }))
     const apiMessages = [{ role: 'system', content: systemContent }, ...history]
 
     setBusy(true)
@@ -138,16 +193,57 @@ export default function App() {
         return { ...s, messages: msgs }
       })
 
+    // Fetch this agent's Composio tools (best-effort; degrade to none on failure
+    // so a missing backend endpoint never blocks plain chat).
+    let tools = []
+    if (composio.enabled) {
+      try {
+        tools = await composio.getTools(agent)
+      } catch (err) {
+        console.warn('Composio tool discovery failed:', err)
+      }
+    }
+
     try {
-      await streamChat({
-        renderUrl: settings.renderUrl,
-        apiKey: settings.apiKey,
-        model: settings.model,
+      await runToolLoop({
         messages: apiMessages,
-        signal: controller.signal,
-        onToken: (_delta, full) => writeLast((m) => ({ ...m, content: full })),
+        maxIterations: 5,
+        isWriteAction: composio.isWriteAction,
+        executeToolCall: (call) => composio.executeToolCall(call),
+        requestApproval: (call) =>
+          new Promise((resolve) => {
+            approvalRef.current[call.id] = resolve
+          }),
+        hooks: {
+          onModelStart: () => appendToSession(id, { role: 'assistant', content: '', streaming: true }),
+          onModelEnd: () => writeLast((m) => ({ ...m, streaming: false })),
+          onToolCall: ({ call, write }) =>
+            appendToSession(id, {
+              role: 'tool_activity',
+              callId: call.id,
+              toolName: call.function?.name,
+              args: parseToolArguments(call.function?.arguments),
+              status: write ? 'pending_approval' : 'running',
+              write,
+            }),
+          onToolResult: ({ call, status, result, error }) =>
+            updateActivity(id, call.id, {
+              status: status === 'ok' ? 'done' : status,
+              result,
+              error,
+            }),
+        },
+        callModel: ({ messages }) =>
+          streamChat({
+            renderUrl: settings.renderUrl,
+            apiKey: settings.apiKey,
+            model: settings.model,
+            messages,
+            tools,
+            signal: controller.signal,
+            onToken: (_delta, full) => writeLast((m) => ({ ...m, content: full })),
+          }),
       })
-      writeLast((m) => ({ ...m, streaming: false }))
     } catch (err) {
       if (err?.name === 'AbortError') {
         writeLast((m) => ({
@@ -162,6 +258,7 @@ export default function App() {
     } finally {
       setBusy(false)
       abortRef.current = null
+      approvalRef.current = {}
     }
   }
 
@@ -202,6 +299,8 @@ export default function App() {
           onOpenVault={() => setVaultOpen(true)}
           onOpenSidebar={() => setSidebarOpen(true)}
           onSelectAgent={handleSelectAgent}
+          onApproveTool={handleApproveTool}
+          onDenyTool={handleDenyTool}
         />
         <Composer
           onSend={handleSend}

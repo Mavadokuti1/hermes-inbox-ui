@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { X, Eye, EyeOff, CheckCircle2, Loader2, AlertCircle } from 'lucide-react'
+import { X, Eye, EyeOff, CheckCircle2, Loader2, AlertCircle, Plug } from 'lucide-react'
 import { listModels } from '../lib/api'
 
 // Settings modal: configure Render URL + API key + model, persisted to localStorage.
@@ -11,13 +11,25 @@ export default function SettingsModal({ open, initial, onClose, onSave }) {
   const [showKey, setShowKey] = useState(false)
   const [testState, setTestState] = useState({ status: 'idle', message: '' })
 
+  // Composio tooling config (Phase 2).
+  const [composioEnabled, setComposioEnabled] = useState(false)
+  const [composioMode, setComposioMode] = useState('proxy')
+  const [composioApiKey, setComposioApiKey] = useState('')
+  const [composioEntityId, setComposioEntityId] = useState('default')
+  const [showComposioKey, setShowComposioKey] = useState(false)
+
   useEffect(() => {
     if (open && initial) {
       setRenderUrl(initial.renderUrl || '')
       setApiKey(initial.apiKey || '')
       setModel(initial.model || 'hermes-agent')
+      setComposioEnabled(Boolean(initial.composioEnabled))
+      setComposioMode(initial.composioMode || 'proxy')
+      setComposioApiKey(initial.composioApiKey || '')
+      setComposioEntityId(initial.composioEntityId || 'default')
       setTestState({ status: 'idle', message: '' })
       setShowKey(false)
+      setShowComposioKey(false)
     }
   }, [open, initial])
 
@@ -37,12 +49,20 @@ export default function SettingsModal({ open, initial, onClose, onSave }) {
   }
 
   function handleSave() {
-    onSave({ renderUrl: renderUrl.trim(), apiKey: apiKey.trim(), model: model.trim() || 'hermes-agent' })
+    onSave({
+      renderUrl: renderUrl.trim(),
+      apiKey: apiKey.trim(),
+      model: model.trim() || 'hermes-agent',
+      composioEnabled,
+      composioMode,
+      composioApiKey: composioApiKey.trim(),
+      composioEntityId: composioEntityId.trim() || 'default',
+    })
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/40 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-xl">
+      <div className="flex max-h-[90dvh] w-full max-w-md flex-col rounded-2xl bg-white shadow-xl">
         <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
           <h2 className="text-base font-semibold text-gray-900">Settings</h2>
           <button
@@ -53,7 +73,7 @@ export default function SettingsModal({ open, initial, onClose, onSave }) {
           </button>
         </div>
 
-        <div className="space-y-4 px-5 py-5">
+        <div className="flex-1 space-y-4 overflow-y-auto px-5 py-5">
           <Field label="Render URL">
             <input
               type="text"
@@ -111,6 +131,88 @@ export default function SettingsModal({ open, initial, onClose, onSave }) {
               </span>
             </div>
           )}
+
+          {/* ---- Composio tooling (Phase 2) ---- */}
+          <div className="border-t border-gray-100 pt-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gray-900 text-white">
+                  <Plug size={13} />
+                </div>
+                <span className="text-sm font-semibold text-gray-900">Composio Tools</span>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={composioEnabled}
+                onClick={() => setComposioEnabled((v) => !v)}
+                className={`relative h-5 w-9 rounded-full transition ${composioEnabled ? 'bg-indigo-600' : 'bg-gray-300'}`}
+              >
+                <span
+                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition ${composioEnabled ? 'left-[18px]' : 'left-0.5'}`}
+                />
+              </button>
+            </div>
+            <p className="mt-1.5 text-xs text-gray-400">
+              Let agents run real-world actions (email, social, GitHub…). Each agent uses its own
+              scoped toolkits.
+            </p>
+
+            {composioEnabled && (
+              <div className="mt-3 space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <ModeCard
+                    active={composioMode === 'proxy'}
+                    onClick={() => setComposioMode('proxy')}
+                    title="Backend proxy"
+                    hint="Recommended · key stays server-side"
+                  />
+                  <ModeCard
+                    active={composioMode === 'direct'}
+                    onClick={() => setComposioMode('direct')}
+                    title="Direct"
+                    hint="Dev only · key in browser, may hit CORS"
+                  />
+                </div>
+
+                {composioMode === 'proxy' ? (
+                  <p className="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500">
+                    Set <span className="font-mono">COMPOSIO_API_KEY</span> as an environment
+                    variable on your Hermes backend. The browser never sees it.
+                  </p>
+                ) : (
+                  <Field label="Composio API Key">
+                    <div className="relative">
+                      <input
+                        type={showComposioKey ? 'text' : 'password'}
+                        value={composioApiKey}
+                        onChange={(e) => setComposioApiKey(e.target.value)}
+                        placeholder="comp_..."
+                        className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowComposioKey((v) => !v)}
+                        className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-gray-600"
+                      >
+                        {showComposioKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </Field>
+                )}
+
+                <Field label="Entity / Connection ID">
+                  <input
+                    type="text"
+                    value={composioEntityId}
+                    onChange={(e) => setComposioEntityId(e.target.value)}
+                    placeholder="default"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  />
+                </Field>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center justify-between gap-2 border-t border-gray-100 px-5 py-4">
@@ -149,5 +251,24 @@ function Field({ label, children }) {
       </span>
       {children}
     </label>
+  )
+}
+
+function ModeCard({ active, onClick, title, hint }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-lg border px-3 py-2 text-left transition ${
+        active
+          ? 'border-indigo-400 bg-indigo-50 ring-1 ring-indigo-200'
+          : 'border-gray-200 hover:border-gray-300'
+      }`}
+    >
+      <span className={`block text-sm font-medium ${active ? 'text-indigo-700' : 'text-gray-700'}`}>
+        {title}
+      </span>
+      <span className="mt-0.5 block text-[11px] leading-tight text-gray-400">{hint}</span>
+    </button>
   )
 }

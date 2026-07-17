@@ -22,26 +22,63 @@ function throwForStatus(status, data, text, base) {
 }
 
 /**
+ * Accumulate OpenAI streaming tool_call deltas into a dense array.
+ * Streaming splits each tool_call across frames: `.id`/`.function.name` land on
+ * the first delta for an index, and `.function.arguments` arrives in fragments
+ * that must be concatenated. Keyed by `index`.
+ */
+function accumulateToolCalls(acc, deltas) {
+  for (const d of deltas) {
+    const i = d.index ?? 0
+    if (!acc[i]) acc[i] = { id: '', type: 'function', function: { name: '', arguments: '' } }
+    if (d.id) acc[i].id = d.id
+    if (d.type) acc[i].type = d.type
+    if (d.function?.name) acc[i].function.name += d.function.name
+    if (d.function?.arguments) acc[i].function.arguments += d.function.arguments
+  }
+}
+
+/**
  * Streaming chat completion via Server-Sent Events (stream: true).
  *
  * Reads the OpenAI-style SSE frames (`data: {...}` with choices[].delta.content),
  * invoking `onToken(delta, full)` for each chunk. If the gateway ignores the
  * stream flag and returns a normal JSON body instead, it transparently falls
- * back to reading the whole response at once. Returns the full assistant text.
+ * back to reading the whole response at once.
+ *
+ * When `tools` are supplied, any returned function calls are accumulated and
+ * returned so the caller can run the tool loop.
  *
  * @param {Object} opts
  * @param {string} opts.renderUrl
  * @param {string} opts.apiKey
  * @param {string} opts.model
  * @param {Array<{role:string,content:string}>} opts.messages
+ * @param {Array<Object>} [opts.tools] OpenAI tool schemas
+ * @param {string|Object} [opts.toolChoice] defaults to 'auto' when tools present
  * @param {AbortSignal} [opts.signal]
  * @param {(delta:string, full:string)=>void} [opts.onToken]
- * @returns {Promise<string>}
+ * @returns {Promise<{content:string, toolCalls:Array<Object>}>}
  */
-export async function streamChat({ renderUrl, apiKey, model, messages, signal, onToken }) {
+export async function streamChat({
+  renderUrl,
+  apiKey,
+  model,
+  messages,
+  tools,
+  toolChoice,
+  signal,
+  onToken,
+}) {
   if (!apiKey) throw new HermesApiError('No API key configured. Open Settings and add it.')
   const url = buildUrl(renderUrl)
   const base = renderUrl.replace(/\/+$/, '')
+
+  const body = { model: model || 'hermes-agent', messages, stream: true }
+  if (tools && tools.length) {
+    body.tools = tools
+    body.tool_choice = toolChoice || 'auto'
+  }
 
   let res
   try {
@@ -52,7 +89,7 @@ export async function streamChat({ renderUrl, apiKey, model, messages, signal, o
         Accept: 'text/event-stream',
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({ model: model || 'hermes-agent', messages, stream: true }),
+      body: JSON.stringify(body),
       signal,
     })
   } catch (err) {
@@ -77,12 +114,14 @@ export async function streamChat({ renderUrl, apiKey, model, messages, signal, o
     if (data?.hermes?.failed) {
       throw new HermesApiError(data.hermes.error || 'The agent failed to produce a reply.')
     }
-    const content = data?.choices?.[0]?.message?.content
-    if (typeof content !== 'string') {
+    const message = data?.choices?.[0]?.message
+    const content = typeof message?.content === 'string' ? message.content : ''
+    const toolCalls = Array.isArray(message?.tool_calls) ? message.tool_calls : []
+    if (!content && !toolCalls.length) {
       throw new HermesApiError('The gateway returned no message content.')
     }
-    onToken?.(content, content)
-    return content
+    if (content) onToken?.(content, content)
+    return { content, toolCalls }
   }
 
   if (!res.ok) {
@@ -100,6 +139,7 @@ export async function streamChat({ renderUrl, apiKey, model, messages, signal, o
   const decoder = new TextDecoder()
   let buffer = ''
   let full = ''
+  const toolCalls = []
 
   while (true) {
     const { done, value } = await reader.read()
@@ -115,18 +155,20 @@ export async function streamChat({ renderUrl, apiKey, model, messages, signal, o
       if (!trimmed || trimmed.startsWith(':')) continue
       if (!trimmed.startsWith('data:')) continue
       const payload = trimmed.slice(5).trim()
-      if (payload === '[DONE]') return full
+      if (payload === '[DONE]') return { content: full, toolCalls }
       try {
         const json = JSON.parse(payload)
         if (json?.hermes?.failed) {
           throw new HermesApiError(json.hermes.error || 'The agent failed to produce a reply.')
         }
-        const delta =
-          json?.choices?.[0]?.delta?.content ?? json?.choices?.[0]?.message?.content ?? ''
+        const choice = json?.choices?.[0]
+        const delta = choice?.delta?.content ?? choice?.message?.content ?? ''
         if (delta) {
           full += delta
           onToken?.(delta, full)
         }
+        const tcDeltas = choice?.delta?.tool_calls ?? choice?.message?.tool_calls
+        if (tcDeltas) accumulateToolCalls(toolCalls, tcDeltas)
       } catch (err) {
         if (err instanceof HermesApiError) throw err
         // Ignore keep-alives / non-JSON frames.
@@ -134,8 +176,10 @@ export async function streamChat({ renderUrl, apiKey, model, messages, signal, o
     }
   }
 
-  if (!full) throw new HermesApiError('The gateway returned no message content.')
-  return full
+  if (!full && !toolCalls.length) {
+    throw new HermesApiError('The gateway returned no message content.')
+  }
+  return { content: full, toolCalls }
 }
 
 /**
