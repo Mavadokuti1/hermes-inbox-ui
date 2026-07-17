@@ -53,3 +53,65 @@ body {
     opacity: 1;
   }
 }
+
+/* Streaming caret — blinks at the end of a message while tokens arrive */
+.stream-caret {
+  @apply ml-0.5 inline-block h-[1em] w-[2px] translate-y-[2px] rounded-sm bg-current align-baseline;
+  animation: caret-blink 1s step-end infinite;
+}
+@keyframes caret-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* Markdown rendering for Memory Vault note previews */
+.md-body {
+  @apply text-[14px] leading-relaxed text-gray-700;
+}
+.md-body h1 {
+  @apply mb-2 mt-1 text-lg font-semibold text-gray-900;
+}
+.md-body h2 {
+  @apply mb-1.5 mt-3 text-base font-semibold text-gray-900;
+}
+.md-body h3 {
+  @apply mb-1 mt-2.5 text-sm font-semibold text-gray-800;
+}
+.md-body p {
+  @apply my-2;
+}
+.md-body ul {
+  @apply my-2 list-disc pl-5;
+}
+.md-body ol {
+  @apply my-2 list-decimal pl-5;
+}
+.md-body li {
+  @apply my-0.5;
+}
+.md-body a {
+  @apply text-violet-600 underline;
+}
+.md-body code {
+  @apply rounded bg-gray-100 px-1 py-0.5 font-mono text-[12.5px] text-gray-800;
+}
+.md-body pre {
+  @apply my-2 overflow-x-auto rounded-lg bg-gray-900 p-3 text-[12.5px] text-gray-100;
+}
+.md-body pre code {
+  @apply bg-transparent p-0 text-gray-100;
+}
+.md-body blockquote {
+  @apply my-2 border-l-2 border-gray-300 pl-3 italic text-gray-500;
+}
+.md-body strong {
+  @apply font-semibold text-gray-900;
+}
+.md-body hr {
+  @apply my-3 border-gray-200;
+}

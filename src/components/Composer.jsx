@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { SendHorizontal, Square } from 'lucide-react'
 
 // Sticky bottom composer with an auto-growing textarea.
-// Enter sends, Shift+Enter inserts a newline.
-export default function Composer({ onSend, onStop, busy, disabled }) {
+// Enter sends, Shift+Enter inserts a newline. Send button follows the active
+// agent's accent color.
+export default function Composer({ onSend, onStop, busy, disabled, accent }) {
   const [value, setValue] = useState('')
   const taRef = useRef(null)
 
@@ -28,9 +29,12 @@ export default function Composer({ onSend, onStop, busy, disabled }) {
     }
   }
 
+  const sendBtn = accent?.sendBtn || 'bg-indigo-600 hover:bg-indigo-700'
+  const focus = accent?.focus || 'focus-within:border-indigo-400 focus-within:ring-indigo-100'
+
   return (
     <div className="border-t border-gray-200 bg-gray-50 px-4 py-3">
-      <div className="mx-auto flex max-w-3xl items-end gap-2 rounded-2xl border border-gray-300 bg-white p-2 shadow-sm focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-100">
+      <div className={`mx-auto flex max-w-3xl items-end gap-2 rounded-2xl border border-gray-300 bg-white p-2 shadow-sm focus-within:ring-2 ${focus}`}>
         <textarea
           ref={taRef}
           rows={1}
@@ -53,7 +57,7 @@ export default function Composer({ onSend, onStop, busy, disabled }) {
           <button
             onClick={submit}
             disabled={disabled || !value.trim()}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400"
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white transition disabled:cursor-not-allowed disabled:bg-gray-200 disabled:text-gray-400 ${sendBtn}`}
             title="Send"
           >
             <SendHorizontal size={16} />
