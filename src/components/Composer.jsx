@@ -33,7 +33,7 @@ export default function Composer({ onSend, onStop, busy, disabled, accent }) {
   const focus = accent?.focus || 'focus-within:border-indigo-400 focus-within:ring-indigo-100'
 
   return (
-    <div className="border-t border-gray-200 bg-gray-50 px-4 py-3">
+    <div className="border-t border-gray-200 bg-gray-50 px-3 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-4">
       <div className={`mx-auto flex max-w-3xl items-end gap-2 rounded-2xl border border-gray-300 bg-white p-2 shadow-sm focus-within:ring-2 ${focus}`}>
         <textarea
           ref={taRef}
@@ -43,7 +43,7 @@ export default function Composer({ onSend, onStop, busy, disabled, accent }) {
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={onKeyDown}
           placeholder={disabled ? 'Add your API key in Settings to start chatting…' : 'Message Hermes…'}
-          className="max-h-[200px] flex-1 resize-none bg-transparent px-2 py-1.5 text-[15px] leading-relaxed text-gray-800 outline-none placeholder:text-gray-400 disabled:cursor-not-allowed"
+          className="max-h-[200px] flex-1 resize-none bg-transparent px-2 py-1.5 text-base leading-relaxed text-gray-800 outline-none placeholder:text-gray-400 disabled:cursor-not-allowed sm:text-[15px]"
         />
         {busy ? (
           <button

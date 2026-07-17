@@ -13,6 +13,17 @@ body,
 
 body {
   @apply bg-gray-50 text-gray-900 antialiased;
+  overscroll-behavior-y: none;
+}
+
+/* iOS Safari zooms the viewport when a focused input's font-size is < 16px.
+   Force 16px on form controls at phone widths so focusing never zooms. */
+@media (max-width: 767px) {
+  input:not([type='checkbox']):not([type='radio']),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
 }
 
 /* Subtle, modern scrollbar */
@@ -114,4 +125,12 @@ body {
 }
 .md-body hr {
   @apply my-3 border-gray-200;
+}
+
+/* Chat-bubble markdown: strip outer margins so bubbles stay tight */
+.md-chat > :first-child {
+  margin-top: 0;
+}
+.md-chat > :last-child {
+  margin-bottom: 0;
 }

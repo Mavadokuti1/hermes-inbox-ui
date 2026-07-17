@@ -1,6 +1,7 @@
 import { User } from 'lucide-react'
 import { splitThinking } from '../lib/thinking'
 import ThinkingPanel from './ThinkingPanel'
+import Markdown from './Markdown'
 
 // A single chat message row. User messages are accent-colored bubbles aligned
 // right; assistant messages are white bubbles aligned left, preceded by a
@@ -32,16 +33,22 @@ export default function MessageBubble({ role, content, error, accent, agent, str
 
         {showAnswerBubble && (
           <div
-            className={`whitespace-pre-wrap break-words rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed shadow-sm ${
+            className={`break-words rounded-2xl px-4 py-2.5 text-[15px] leading-relaxed shadow-sm ${
               isUser
-                ? `rounded-tr-sm ${userBubbleClass}`
+                ? `whitespace-pre-wrap rounded-tr-sm ${userBubbleClass}`
                 : error
-                  ? 'rounded-tl-sm border border-red-200 bg-red-50 text-red-700'
+                  ? 'whitespace-pre-wrap rounded-tl-sm border border-red-200 bg-red-50 text-red-700'
                   : 'rounded-tl-sm border border-gray-200 bg-white text-gray-800'
             }`}
           >
-            {answer}
-            {!isUser && streaming && !thinking && <span className="stream-caret" />}
+            {isUser || error ? (
+              answer
+            ) : (
+              <>
+                {answer && <Markdown text={answer} className="md-chat" />}
+                {streaming && !thinking && <span className="stream-caret" />}
+              </>
+            )}
           </div>
         )}
       </div>

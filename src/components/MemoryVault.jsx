@@ -71,7 +71,7 @@ export default function MemoryVault({ open, notes, onChange, onClose }) {
   }
 
   return (
-    <aside className="flex h-full w-[380px] shrink-0 flex-col border-l border-gray-200 bg-white">
+    <aside className="fixed inset-0 z-50 flex h-[100dvh] w-full flex-col bg-white pt-[env(safe-area-inset-top)] md:static md:z-auto md:h-full md:w-[380px] md:shrink-0 md:border-l md:border-gray-200 md:pt-0">
       {/* Header */}
       <div className="flex items-center gap-2 border-b border-gray-200 px-4 py-3">
         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-600 text-white">

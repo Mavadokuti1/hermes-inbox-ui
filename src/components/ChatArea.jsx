@@ -1,10 +1,20 @@
 import { useEffect, useRef } from 'react'
-import { Settings, Sparkles, BookOpen } from 'lucide-react'
+import { Settings, Sparkles, BookOpen, Menu } from 'lucide-react'
 import MessageBubble from './MessageBubble'
+import AgentSelector from './AgentSelector'
 
-// Center chat panel: header (active agent badge + vault/settings) + scrollable
-// transcript + typing indicator.
-export default function ChatArea({ session, agent, busy, onOpenSettings, onOpenVault, configured }) {
+// Center chat panel: header (hamburger + agent selector + vault/settings) +
+// scrollable transcript + typing indicator.
+export default function ChatArea({
+  session,
+  agent,
+  busy,
+  onOpenSettings,
+  onOpenVault,
+  onOpenSidebar,
+  onSelectAgent,
+  configured,
+}) {
   const scrollRef = useRef(null)
   const messages = session?.messages || []
   const AgentIcon = agent?.icon
@@ -26,38 +36,37 @@ export default function ChatArea({ session, agent, busy, onOpenSettings, onOpenV
   const showDots = busy && !(last?.role === 'assistant' && last.content)
 
   return (
-    <div className="flex h-full flex-1 flex-col bg-gray-50">
+    <div className="flex h-full min-w-0 flex-1 flex-col bg-gray-50">
       {/* Header */}
-      <header className="flex items-center justify-between border-b border-gray-200 bg-white/80 px-5 py-3 backdrop-blur">
-        <div className="flex min-w-0 items-center gap-2">
-          <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${accent?.avatar || 'bg-indigo-600 text-white'}`}>
-            {AgentIcon && <AgentIcon size={15} />}
-          </div>
-          <div className="flex min-w-0 flex-col">
-            <h1 className="truncate text-sm font-semibold text-gray-800">
-              {session?.title || 'Hermes Agent OS'}
-            </h1>
-            {agent && (
-              <span className={`w-fit rounded-full px-1.5 text-[10px] font-medium ${accent?.chip}`}>
-                {agent.name}
-              </span>
-            )}
-          </div>
+      <header className="flex items-center gap-2 border-b border-gray-200 bg-white/80 px-3 py-2.5 backdrop-blur sm:px-5">
+        {/* Hamburger — mobile only */}
+        <button
+          onClick={onOpenSidebar}
+          className="-ml-1 shrink-0 rounded-lg p-1.5 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 md:hidden"
+          title="Menu"
+        >
+          <Menu size={20} />
+        </button>
+
+        {/* Agent selector */}
+        <div className="min-w-0 flex-1">
+          <AgentSelector agent={agent} onSelect={onSelectAgent} />
         </div>
-        <div className="flex items-center gap-1">
+
+        <div className="flex shrink-0 items-center gap-1">
           <button
             onClick={onOpenVault}
             className="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
             title="Memory Vault"
           >
-            <BookOpen size={17} />
+            <BookOpen size={18} />
           </button>
           <button
             onClick={onOpenSettings}
             className="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
             title="Settings"
           >
-            <Settings size={17} />
+            <Settings size={18} />
           </button>
         </div>
       </header>

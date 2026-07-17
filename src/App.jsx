@@ -33,6 +33,7 @@ export default function App() {
   const [busy, setBusy] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [vaultOpen, setVaultOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const abortRef = useRef(null)
   const notesRef = useRef(notes)
 
@@ -165,21 +166,33 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-full w-full overflow-hidden">
+    <div className="flex h-[100dvh] w-full overflow-hidden">
       <Sidebar
         sessions={sessions}
         activeId={activeId}
-        activeAgentId={activeSession?.agentId || DEFAULT_AGENT_ID}
-        onSelect={setActiveId}
-        onSelectAgent={handleSelectAgent}
-        onNew={handleNew}
+        onSelect={(id) => {
+          setActiveId(id)
+          setSidebarOpen(false)
+        }}
+        onNew={() => {
+          handleNew()
+          setSidebarOpen(false)
+        }}
         onDelete={handleDelete}
-        onOpenSettings={() => setSettingsOpen(true)}
-        onOpenVault={() => setVaultOpen(true)}
+        onOpenSettings={() => {
+          setSettingsOpen(true)
+          setSidebarOpen(false)
+        }}
+        onOpenVault={() => {
+          setVaultOpen(true)
+          setSidebarOpen(false)
+        }}
         connected={configured}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
 
-      <main className="flex h-full flex-1 flex-col">
+      <main className="flex h-full min-w-0 flex-1 flex-col">
         <ChatArea
           session={activeSession}
           agent={activeAgent}
@@ -187,6 +200,8 @@ export default function App() {
           configured={configured}
           onOpenSettings={() => setSettingsOpen(true)}
           onOpenVault={() => setVaultOpen(true)}
+          onOpenSidebar={() => setSidebarOpen(true)}
+          onSelectAgent={handleSelectAgent}
         />
         <Composer
           onSend={handleSend}
