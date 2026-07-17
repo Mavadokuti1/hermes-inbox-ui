@@ -1,22 +1,18 @@
 import { useEffect, useRef } from 'react'
-import { Settings, BookOpen, Menu } from 'lucide-react'
+import { TerminalSquare } from 'lucide-react'
 import MessageBubble from './MessageBubble'
-import AgentSelector from './AgentSelector'
 import ToolActivity from './ToolActivity'
 
-// Center chat panel: header (hamburger + agent selector + vault/settings) +
-// scrollable transcript + typing indicator.
+// Left pane of the deck: the command terminal. A slim title bar + the scrolling
+// transcript where messages and Composio tool-execution logs stream in.
 export default function ChatArea({
   session,
   agent,
   busy,
+  configured,
   onOpenSettings,
-  onOpenVault,
-  onOpenSidebar,
-  onSelectAgent,
   onApproveTool,
   onDenyTool,
-  configured,
 }) {
   const scrollRef = useRef(null)
   const messages = session?.messages || []
@@ -28,7 +24,6 @@ export default function ChatArea({
     if (el) el.scrollTop = el.scrollHeight
   }, [messages.length, busy])
 
-  // Also autoscroll as the streaming message grows.
   const lastLen = messages[messages.length - 1]?.content?.length || 0
   useEffect(() => {
     const el = scrollRef.current
@@ -37,54 +32,27 @@ export default function ChatArea({
 
   const last = messages[messages.length - 1]
   const showDots =
-    busy &&
-    !(last?.role === 'assistant' && last.content) &&
-    last?.role !== 'tool_activity'
+    busy && !(last?.role === 'assistant' && last.content) && last?.role !== 'tool_activity'
 
-  // Hide assistant turns that ended up empty (e.g. a turn that only emitted
-  // tool_calls) so the transcript doesn't show a lone avatar.
   const visible = messages.filter(
     (m) => !(m.role === 'assistant' && !m.streaming && !m.error && !(m.content || '').trim()),
   )
 
   return (
-    <div className="flex h-full min-w-0 flex-1 flex-col bg-gray-50">
-      {/* Header */}
-      <header className="flex items-center gap-2 border-b border-gray-200 bg-white/80 px-3 py-2.5 backdrop-blur sm:px-5">
-        {/* Hamburger — mobile only */}
-        <button
-          onClick={onOpenSidebar}
-          className="-ml-1 shrink-0 rounded-lg p-1.5 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 md:hidden"
-          title="Menu"
-        >
-          <Menu size={20} />
-        </button>
-
-        {/* Agent selector */}
-        <div className="min-w-0 flex-1">
-          <AgentSelector agent={agent} onSelect={onSelectAgent} />
-        </div>
-
-        <div className="flex shrink-0 items-center gap-1">
-          <button
-            onClick={onOpenVault}
-            className="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
-            title="Memory Vault"
-          >
-            <BookOpen size={18} />
-          </button>
-          <button
-            onClick={onOpenSettings}
-            className="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600"
-            title="Settings"
-          >
-            <Settings size={18} />
-          </button>
-        </div>
-      </header>
+    <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
+      {/* Terminal title bar */}
+      <div className="flex items-center gap-2 border-b border-zinc-800 bg-zinc-900/40 px-4 py-2">
+        <TerminalSquare size={14} className="text-zinc-500" />
+        <span className="font-mono text-[11px] font-medium uppercase tracking-wider text-zinc-500">
+          command terminal
+        </span>
+        <span className="truncate font-mono text-[11px] text-zinc-600">
+          / {session?.title || 'new session'}
+        </span>
+      </div>
 
       {/* Transcript */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-6">
+      <div ref={scrollRef} className="deck-grid flex-1 overflow-y-auto px-4 py-6">
         <div className="mx-auto flex max-w-3xl flex-col gap-5">
           {messages.length === 0 ? (
             <EmptyState agent={agent} configured={configured} onOpenSettings={onOpenSettings} />
@@ -112,11 +80,13 @@ export default function ChatArea({
           )}
 
           {showDots && (
-            <div className="flex items-center gap-3">
-              <div className={`flex h-8 w-8 items-center justify-center rounded-full ${accent?.avatar || 'bg-indigo-600 text-white'}`}>
+            <div className="flex items-center gap-3 animate-fade-in">
+              <div
+                className={`flex h-8 w-8 items-center justify-center rounded-lg ${accent?.avatar || 'bg-indigo-600 text-white'}`}
+              >
                 {AgentIcon && <AgentIcon size={16} />}
               </div>
-              <div className="flex items-center gap-1 rounded-2xl rounded-tl-sm border border-gray-200 bg-white px-4 py-3 shadow-sm">
+              <div className="flex items-center gap-1 rounded-xl border border-zinc-800 bg-zinc-900 px-4 py-3">
                 <span className="typing-dot" />
                 <span className="typing-dot" />
                 <span className="typing-dot" />
@@ -130,28 +100,47 @@ export default function ChatArea({
 }
 
 function EmptyState({ agent, configured, onOpenSettings }) {
-  const hour = new Date().getHours()
-  const greeting =
-    hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+  const AgentIcon = agent?.icon
+  const accent = agent?.accent
 
-  return (
-    <div className="flex min-h-[55vh] flex-col items-center justify-center gap-1.5 px-4 text-center">
-      <h2 className="text-2xl font-semibold tracking-tight text-gray-800 sm:text-3xl">
-        {greeting}
-      </h2>
-      <p className="text-sm text-gray-400">
-        {configured
-          ? agent?.tagline || `Chatting with ${agent?.name || 'your agent'}. What's on the agenda?`
-          : 'Add your Render URL and API key in Settings to begin.'}
-      </p>
-      {!configured && (
+  if (!configured) {
+    return (
+      <div className="mt-10 rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 font-mono text-sm">
+        <p className="text-amber-400">▸ system not configured</p>
+        <p className="mt-1 text-zinc-500">
+          Add your Render URL and API key to bring the agents online.
+        </p>
         <button
           onClick={onOpenSettings}
-          className="mt-2 rounded-lg border border-gray-200 px-4 py-1.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+          className="mt-3 rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs font-medium text-zinc-200 transition hover:bg-zinc-700"
         >
           Open Settings
         </button>
-      )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-10 rounded-xl border border-zinc-800 bg-zinc-900/50 p-5">
+      <div className="flex items-center gap-2.5">
+        <span
+          className={`flex h-9 w-9 items-center justify-center rounded-lg ${accent?.avatar || 'bg-indigo-600 text-white'}`}
+        >
+          {AgentIcon && <AgentIcon size={18} />}
+        </span>
+        <div className="flex flex-col">
+          <span className="font-mono text-[11px] uppercase tracking-wider text-emerald-400">
+            ▸ agent online
+          </span>
+          <span className="text-sm font-semibold text-zinc-100">{agent?.name} standing by</span>
+        </div>
+      </div>
+      <p className="mt-3 text-sm text-zinc-400">
+        {agent?.tagline || 'Issue a command to begin.'}
+      </p>
+      <p className="mt-2 font-mono text-[11px] text-zinc-600">
+        Type a command below · tools execute inline with an approval gate
+      </p>
     </div>
   )
 }

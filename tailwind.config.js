@@ -15,6 +15,7 @@ export default {
           'Arial',
           'sans-serif',
         ],
+        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       keyframes: {
         'fade-in': {

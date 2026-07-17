@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Sidebar from './components/Sidebar'
+import StatusBar from './components/StatusBar'
 import ChatArea from './components/ChatArea'
 import Composer from './components/Composer'
 import SettingsModal from './components/SettingsModal'
@@ -263,7 +264,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-[100dvh] w-full overflow-hidden">
+    <div className="flex h-[100dvh] w-full overflow-hidden bg-zinc-950 text-zinc-200">
       <Sidebar
         sessions={sessions}
         activeId={activeId}
@@ -289,29 +290,48 @@ export default function App() {
         onClose={() => setSidebarOpen(false)}
       />
 
-      <main className="flex h-full min-w-0 flex-1 flex-col">
-        <ChatArea
-          session={activeSession}
+      {/* Command deck: top status row, then terminal + docked vault */}
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <StatusBar
           agent={activeAgent}
-          busy={busy}
-          configured={configured}
-          onOpenSettings={() => setSettingsOpen(true)}
-          onOpenVault={() => setVaultOpen(true)}
-          onOpenSidebar={() => setSidebarOpen(true)}
           onSelectAgent={handleSelectAgent}
-          onApproveTool={handleApproveTool}
-          onDenyTool={handleDenyTool}
+          onOpenSidebar={() => setSidebarOpen(true)}
+          onOpenVault={() => setVaultOpen(true)}
+          onOpenSettings={() => setSettingsOpen(true)}
+          connected={configured}
+          composioEnabled={settings.composioEnabled}
         />
-        <Composer
-          onSend={handleSend}
-          onStop={handleStop}
-          busy={busy}
-          disabled={!configured || !activeSession}
-          accent={activeAgent?.accent}
-        />
-      </main>
 
+        <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_360px]">
+          <main className="flex min-w-0 flex-col overflow-hidden border-zinc-800 lg:border-r">
+            <ChatArea
+              session={activeSession}
+              agent={activeAgent}
+              busy={busy}
+              configured={configured}
+              onOpenSettings={() => setSettingsOpen(true)}
+              onApproveTool={handleApproveTool}
+              onDenyTool={handleDenyTool}
+            />
+            <Composer
+              onSend={handleSend}
+              onStop={handleStop}
+              busy={busy}
+              disabled={!configured || !activeSession}
+              accent={activeAgent?.accent}
+            />
+          </main>
+
+          {/* Docked Memory Vault — desktop only */}
+          <div className="hidden overflow-hidden lg:block">
+            <MemoryVault variant="docked" notes={notes} onChange={setNotes} />
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Memory Vault overlay */}
       <MemoryVault
+        variant="overlay"
         open={vaultOpen}
         notes={notes}
         onChange={setNotes}
