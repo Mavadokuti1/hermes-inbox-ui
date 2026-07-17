@@ -71,7 +71,16 @@ export default function MemoryVault({ open, notes, onChange, onClose }) {
   }
 
   return (
-    <aside className="fixed inset-0 z-50 flex h-[100dvh] w-full flex-col bg-white pt-[env(safe-area-inset-top)] md:static md:z-auto md:h-full md:w-[380px] md:shrink-0 md:border-l md:border-gray-200 md:pt-0">
+    <>
+      {/* Dimmed backdrop — click to close. Overlay on every breakpoint so the
+          vault never docks as a third column and squeezes the chat. */}
+      <div
+        className="fixed inset-0 z-40 bg-gray-900/40 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden
+      />
+
+      <aside className="fixed inset-y-0 right-0 z-50 flex h-[100dvh] w-full flex-col border-l border-gray-200 bg-white shadow-2xl pt-[env(safe-area-inset-top)] animate-slide-in-right sm:w-[400px]">
       {/* Header */}
       <div className="flex items-center gap-2 border-b border-gray-200 px-4 py-3">
         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-600 text-white">
@@ -202,5 +211,6 @@ export default function MemoryVault({ open, notes, onChange, onClose }) {
         )}
       </div>
     </aside>
+    </>
   )
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Settings, Sparkles, BookOpen, Menu } from 'lucide-react'
+import { Settings, BookOpen, Menu } from 'lucide-react'
 import MessageBubble from './MessageBubble'
 import AgentSelector from './AgentSelector'
 
@@ -109,24 +109,24 @@ export default function ChatArea({
 }
 
 function EmptyState({ agent, configured, onOpenSettings }) {
-  const AgentIcon = agent?.icon
+  const hour = new Date().getHours()
+  const greeting =
+    hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
-      <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${agent?.accent?.avatar || 'bg-indigo-600 text-white'}`}>
-        {AgentIcon ? <AgentIcon size={22} /> : <Sparkles size={22} />}
-      </div>
-      <h2 className="text-lg font-semibold text-gray-800">
-        {agent ? `${agent.name} · ${agent.role}` : 'How can I help you today?'}
+    <div className="flex min-h-[55vh] flex-col items-center justify-center gap-1.5 px-4 text-center">
+      <h2 className="text-2xl font-semibold tracking-tight text-gray-800 sm:text-3xl">
+        {greeting}
       </h2>
-      <p className="max-w-sm text-sm text-gray-500">
+      <p className="text-sm text-gray-400">
         {configured
-          ? agent?.tagline || 'Type a message below to start chatting.'
-          : 'First, add your Render URL and API key in Settings, then start chatting.'}
+          ? agent?.tagline || `Chatting with ${agent?.name || 'your agent'}. What's on the agenda?`
+          : 'Add your Render URL and API key in Settings to begin.'}
       </p>
       {!configured && (
         <button
           onClick={onOpenSettings}
-          className="mt-1 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800"
+          className="mt-2 rounded-lg border border-gray-200 px-4 py-1.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
         >
           Open Settings
         </button>
