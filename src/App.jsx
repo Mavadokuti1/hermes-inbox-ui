@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Sidebar from './components/Sidebar'
 import StatusBar from './components/StatusBar'
 import ChatArea from './components/ChatArea'
@@ -8,8 +8,9 @@ import MemoryVault from './components/MemoryVault'
 import IntegrationsView from './components/IntegrationsView'
 import { streamChat } from './lib/api'
 import { runToolLoop } from './lib/toolLoop'
+import { loadAssignments, saveAssignments } from './lib/assignments'
 import { createComposioAdapter, parseToolArguments } from './lib/composio'
-import { getAgent, DEFAULT_AGENT_ID } from './lib/agents'
+import { AGENTS, getAgent, DEFAULT_AGENT_ID } from './lib/agents'
 import { splitThinking } from './lib/thinking'
 import { topRelevantNotes, buildSystemPrompt } from './lib/context'
 import {
@@ -43,6 +44,7 @@ export default function App() {
   const [connLoading, setConnLoading] = useState(false)
   const [connectingSlug, setConnectingSlug] = useState(null)
   const [connError, setConnError] = useState('')
+  const [assignments, setAssignments] = useState(loadAssignments)
   const abortRef = useRef(null)
   const notesRef = useRef(notes)
   // Pending tool-approval resolvers, keyed by tool_call id. The Approve/Deny
@@ -201,6 +203,29 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view, composio.enabled])
 
+  // Persist per-agent toolkit assignments.
+  useEffect(() => {
+    saveAssignments(assignments)
+  }, [assignments])
+
+  // Search the Composio app catalog (proxied) for the Integrations view.
+  const searchCatalog = useCallback((q, cursor) => composio.listToolkits(q, cursor), [composio])
+
+  // Toggle a connected app on/off for a sub-agent.
+  function toggleAssignment(agentId, slug) {
+    setAssignments((prev) => {
+      const cur = new Set(prev[agentId] || [])
+      cur.has(slug) ? cur.delete(slug) : cur.add(slug)
+      return { ...prev, [agentId]: [...cur] }
+    })
+  }
+
+  // The active agent with its effective (assigned) toolkits, for the header toolset.
+  const effectiveActiveAgent = useMemo(
+    () => ({ ...activeAgent, toolkits: assignments[activeAgent.id] || activeAgent.toolkits }),
+    [activeAgent, assignments],
+  )
+
   function handleStop() {
     abortRef.current?.abort()
   }
@@ -208,7 +233,11 @@ export default function App() {
   async function handleSend(text) {
     if (!activeSession) return
     const id = activeSession.id
-    const agent = getAgent(activeSession.agentId || DEFAULT_AGENT_ID)
+    const baseAgent = getAgent(activeSession.agentId || DEFAULT_AGENT_ID)
+    // Effective toolkits come from the Skills Matrix assignments (falling back
+    // to the agent's defaults), so a tool assigned in the UI is actually
+    // discovered and made callable for this agent.
+    const agent = { ...baseAgent, toolkits: assignments[baseAgent.id] || baseAgent.toolkits }
     const isFirst = activeSession.messages.length === 0
 
     const userMsg = { role: 'user', content: text }
@@ -350,7 +379,7 @@ export default function App() {
       {/* Command deck: top status row, then terminal + docked vault */}
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <StatusBar
-          agent={activeAgent}
+          agent={effectiveActiveAgent}
           onSelectAgent={handleSelectAgent}
           onOpenSidebar={() => setSidebarOpen(true)}
           onOpenVault={() => setVaultOpen(true)}
@@ -371,6 +400,10 @@ export default function App() {
               onRefresh={refreshConnections}
               onConnect={handleConnect}
               onOpenSettings={() => setSettingsOpen(true)}
+              onSearchCatalog={searchCatalog}
+              agents={AGENTS}
+              assignments={assignments}
+              onToggleAssignment={toggleAssignment}
             />
           </div>
         ) : (

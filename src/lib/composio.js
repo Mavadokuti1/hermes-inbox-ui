@@ -106,6 +106,17 @@ function createProxyTransport({ renderUrl, hermesApiKey, entityId }) {
       if (!res.ok) throw new Error(data?.error || `Connect failed (HTTP ${res.status}).`)
       return data // { redirect_url, connection_id, auth_config_id }
     },
+
+    // ---- App Catalog: search the full Composio toolkit catalog (1,000+ apps) ----
+    async listToolkits(search, cursor) {
+      const p = new URLSearchParams({ limit: '24' })
+      if (search) p.set('search', search)
+      if (cursor) p.set('cursor', cursor)
+      const res = await fetch(`${base}/v1/toolkits?${p.toString()}`, { headers: authHeaders })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data?.error || `Catalog lookup failed (HTTP ${res.status}).`)
+      return { toolkits: Array.isArray(data?.toolkits) ? data.toolkits : [], nextCursor: data?.next_cursor || null }
+    },
   }
 }
 
@@ -157,6 +168,9 @@ function createDirectTransport({ apiKey, entityId, baseUrl }) {
     },
     async initiateConnection() {
       throw new Error('Connection management requires Backend proxy mode.')
+    },
+    async listToolkits() {
+      throw new Error('App catalog requires Backend proxy mode.')
     },
   }
 }
@@ -213,6 +227,11 @@ export function createComposioAdapter(cfg = {}) {
     async initiateConnection(toolkit, callbackUrl) {
       if (!usable) throw new Error('Composio is not configured.')
       return transport.initiateConnection(toolkit, callbackUrl)
+    },
+
+    async listToolkits(search, cursor) {
+      if (!usable) return { toolkits: [], nextCursor: null }
+      return transport.listToolkits(search, cursor)
     },
 
     isWriteAction,
