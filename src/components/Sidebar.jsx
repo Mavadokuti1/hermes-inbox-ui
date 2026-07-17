@@ -1,4 +1,4 @@
-import { MessageSquarePlus, MessageSquare, Trash2, Settings, Zap, BookOpen, X } from 'lucide-react'
+import { MessageSquarePlus, MessageSquare, Trash2, Settings, Zap, BookOpen, X, TerminalSquare, Plug } from 'lucide-react'
 
 // Left rail: static on desktop (md+), a slide-in drawer on mobile.
 export default function Sidebar({
@@ -12,7 +12,23 @@ export default function Sidebar({
   connected,
   open,
   onClose,
+  view,
+  onSelectView,
 }) {
+  const navItem = (id, label, Icon) => (
+    <button
+      onClick={() => onSelectView(id)}
+      className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition ${
+        view === id
+          ? 'bg-white/5 text-zinc-100 ring-1 ring-zinc-700'
+          : 'text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
+      }`}
+    >
+      <Icon size={16} className="shrink-0" />
+      {label}
+    </button>
+  )
+
   return (
     <>
       {/* Mobile overlay */}
@@ -50,6 +66,12 @@ export default function Sidebar({
           >
             <X size={18} />
           </button>
+        </div>
+
+        {/* Nav */}
+        <div className="space-y-0.5 px-3 pt-3">
+          {navItem('terminal', 'Command Terminal', TerminalSquare)}
+          {navItem('integrations', 'Integrations', Plug)}
         </div>
 
         {/* New chat */}

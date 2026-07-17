@@ -85,6 +85,27 @@ function createProxyTransport({ renderUrl, hermesApiKey, entityId }) {
       }
       return data?.result ?? data
     },
+
+    // ---- Integrations Hub: list + initiate connections via the proxy ----
+    async listConnections() {
+      const res = await fetch(`${base}/v1/connections?entityId=${encodeURIComponent(entityId)}`, {
+        headers: authHeaders,
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data?.error || `Connection lookup failed (HTTP ${res.status}).`)
+      return Array.isArray(data?.connections) ? data.connections : []
+    },
+
+    async initiateConnection(toolkit, callbackUrl) {
+      const res = await fetch(`${base}/v1/connections/initiate`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({ toolkit, entityId, callbackUrl }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data?.error || `Connect failed (HTTP ${res.status}).`)
+      return data // { redirect_url, connection_id, auth_config_id }
+    },
   }
 }
 
@@ -127,6 +148,15 @@ function createDirectTransport({ apiKey, entityId, baseUrl }) {
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data?.error || `Composio execution failed (HTTP ${res.status}).`)
       return data?.data ?? data?.response_data ?? data
+    },
+
+    // Connection management is server-side only (needs auth configs + the
+    // Composio key). Direct/browser mode can't do it safely — use proxy mode.
+    async listConnections() {
+      throw new Error('Connection management requires Backend proxy mode.')
+    },
+    async initiateConnection() {
+      throw new Error('Connection management requires Backend proxy mode.')
     },
   }
 }
@@ -173,6 +203,16 @@ export function createComposioAdapter(cfg = {}) {
       const name = call?.function?.name
       const args = parseToolArguments(call?.function?.arguments)
       return transport.execute(name, args)
+    },
+
+    async listConnections() {
+      if (!usable) return []
+      return transport.listConnections()
+    },
+
+    async initiateConnection(toolkit, callbackUrl) {
+      if (!usable) throw new Error('Composio is not configured.')
+      return transport.initiateConnection(toolkit, callbackUrl)
     },
 
     isWriteAction,

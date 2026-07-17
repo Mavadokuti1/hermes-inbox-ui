@@ -5,6 +5,7 @@ import ChatArea from './components/ChatArea'
 import Composer from './components/Composer'
 import SettingsModal from './components/SettingsModal'
 import MemoryVault from './components/MemoryVault'
+import IntegrationsView from './components/IntegrationsView'
 import { streamChat } from './lib/api'
 import { runToolLoop } from './lib/toolLoop'
 import { createComposioAdapter, parseToolArguments } from './lib/composio'
@@ -37,6 +38,11 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [vaultOpen, setVaultOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [view, setView] = useState('terminal') // 'terminal' | 'integrations'
+  const [connections, setConnections] = useState([])
+  const [connLoading, setConnLoading] = useState(false)
+  const [connectingSlug, setConnectingSlug] = useState(null)
+  const [connError, setConnError] = useState('')
   const abortRef = useRef(null)
   const notesRef = useRef(notes)
   // Pending tool-approval resolvers, keyed by tool_call id. The Approve/Deny
@@ -148,6 +154,52 @@ export default function App() {
     }
     patchSession(activeSession.id, (s) => ({ ...s, agentId }))
   }
+
+  // ---- Integrations Hub: connection listing + OAuth initiation ----
+  async function refreshConnections() {
+    if (!composio.enabled) return
+    setConnLoading(true)
+    setConnError('')
+    try {
+      setConnections(await composio.listConnections())
+    } catch (err) {
+      setConnError(err.message || 'Failed to load connections.')
+    } finally {
+      setConnLoading(false)
+    }
+  }
+
+  async function handleConnect(slug) {
+    if (!composio.enabled) return
+    setConnectingSlug(slug)
+    setConnError('')
+    try {
+      const { redirect_url } = await composio.initiateConnection(slug, window.location.href)
+      if (redirect_url) {
+        // Open the provider's OAuth consent in a new tab; the user authorizes there.
+        window.open(redirect_url, '_blank', 'noopener,noreferrer')
+        // Poll a few times so the card flips to "Connected" once auth completes.
+        for (const delay of [4000, 9000, 15000, 25000]) {
+          setTimeout(refreshConnections, delay)
+        }
+      } else {
+        setConnError('The backend did not return an authorization link. Check the Render logs.')
+      }
+    } catch (err) {
+      setConnError(err.message || 'Connect failed.')
+    } finally {
+      setConnectingSlug(null)
+    }
+  }
+
+  // Load connections when entering the Integrations view, then poll gently.
+  useEffect(() => {
+    if (view !== 'integrations' || !composio.enabled) return
+    refreshConnections()
+    const t = setInterval(refreshConnections, 12000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, composio.enabled])
 
   function handleStop() {
     abortRef.current?.abort()
@@ -288,6 +340,11 @@ export default function App() {
         connected={configured}
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        view={view}
+        onSelectView={(v) => {
+          setView(v)
+          setSidebarOpen(false)
+        }}
       />
 
       {/* Command deck: top status row, then terminal + docked vault */}
@@ -302,31 +359,47 @@ export default function App() {
           composioEnabled={settings.composioEnabled}
         />
 
-        <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_360px]">
-          <main className="flex min-w-0 flex-col overflow-hidden border-zinc-800 lg:border-r">
-            <ChatArea
-              session={activeSession}
-              agent={activeAgent}
-              busy={busy}
+        {view === 'integrations' ? (
+          <div className="flex min-h-0 flex-1 overflow-hidden">
+            <IntegrationsView
+              composioEnabled={settings.composioEnabled}
               configured={configured}
+              connections={connections}
+              loading={connLoading}
+              connectingSlug={connectingSlug}
+              error={connError}
+              onRefresh={refreshConnections}
+              onConnect={handleConnect}
               onOpenSettings={() => setSettingsOpen(true)}
-              onApproveTool={handleApproveTool}
-              onDenyTool={handleDenyTool}
             />
-            <Composer
-              onSend={handleSend}
-              onStop={handleStop}
-              busy={busy}
-              disabled={!configured || !activeSession}
-              accent={activeAgent?.accent}
-            />
-          </main>
-
-          {/* Docked Memory Vault — desktop only */}
-          <div className="hidden overflow-hidden lg:block">
-            <MemoryVault variant="docked" notes={notes} onChange={setNotes} />
           </div>
-        </div>
+        ) : (
+          <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_360px]">
+            <main className="flex min-w-0 flex-col overflow-hidden border-zinc-800 lg:border-r">
+              <ChatArea
+                session={activeSession}
+                agent={activeAgent}
+                busy={busy}
+                configured={configured}
+                onOpenSettings={() => setSettingsOpen(true)}
+                onApproveTool={handleApproveTool}
+                onDenyTool={handleDenyTool}
+              />
+              <Composer
+                onSend={handleSend}
+                onStop={handleStop}
+                busy={busy}
+                disabled={!configured || !activeSession}
+                accent={activeAgent?.accent}
+              />
+            </main>
+
+            {/* Docked Memory Vault — desktop only */}
+            <div className="hidden overflow-hidden lg:block">
+              <MemoryVault variant="docked" notes={notes} onChange={setNotes} />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Mobile Memory Vault overlay */}
