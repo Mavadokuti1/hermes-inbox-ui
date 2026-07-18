@@ -196,15 +196,17 @@ export default function App() {
     try {
       const { redirect_url } = await composio.initiateConnection(slug, window.location.href)
       if (redirect_url) {
-        // Open the provider's OAuth consent in a new tab; the user authorizes there.
-        window.open(redirect_url, '_blank', 'noopener,noreferrer')
-        // Poll a few times so the card flips to "Connected" once auth completes.
-        for (const delay of [4000, 9000, 15000, 25000]) {
-          setTimeout(refreshConnections, delay)
-        }
-      } else {
-        setConnError('The backend did not return an authorization link. Check the Render logs.')
+        // Redirect the whole tab to the provider's OAuth consent page. This must be a
+        // full-page navigation, NOT window.open(_blank): a new-tab open that fires after
+        // an await is treated as non-user-initiated and gets silently killed by the popup
+        // blocker (the "spins forever, never redirects" symptom). On return, Composio
+        // sends the browser back to this app (callbackUrl) and refreshConnections() —
+        // run on entering the Integrations view — flips the card to "Connected".
+        window.location.href = redirect_url
+        return // navigating away; nothing else to do on this page
       }
+      // Reached the backend but got no link back — surface it instead of spinning.
+      setConnError('The backend did not return an authorization link. Check the Render logs.')
     } catch (err) {
       setConnError(err.message || 'Connect failed.')
     } finally {
