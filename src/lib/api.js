@@ -58,6 +58,10 @@ function accumulateToolCalls(acc, deltas) {
  * @param {string|Object} [opts.toolChoice] defaults to 'auto' when tools present
  * @param {AbortSignal} [opts.signal]
  * @param {(delta:string, full:string)=>void} [opts.onToken]
+ * @param {(info:{id:string,name:string,index:number})=>void} [opts.onToolStart]
+ *        Fired the instant a streaming tool_call's id+name first arrive — before
+ *        its arguments finish streaming — so the UI can show an "Executing […]"
+ *        pill immediately. Fires at most once per tool_call.
  * @returns {Promise<{content:string, toolCalls:Array<Object>}>}
  */
 export async function streamChat({
@@ -69,6 +73,7 @@ export async function streamChat({
   toolChoice,
   signal,
   onToken,
+  onToolStart,
 }) {
   if (!apiKey) throw new HermesApiError('No API key configured. Open Settings and add it.')
   const url = buildUrl(renderUrl)
@@ -140,6 +145,20 @@ export async function streamChat({
   let buffer = ''
   let full = ''
   const toolCalls = []
+  // Tracks tool_call ids we've already announced via onToolStart, so the pill
+  // fires exactly once per call the moment its name is known (not per frame).
+  const startedTools = new Set()
+
+  // Announce any tool_call whose id+name are now known but not yet emitted.
+  const announceStartedTools = () => {
+    for (let i = 0; i < toolCalls.length; i += 1) {
+      const tc = toolCalls[i]
+      if (tc && tc.id && tc.function?.name && !startedTools.has(tc.id)) {
+        startedTools.add(tc.id)
+        onToolStart?.({ id: tc.id, name: tc.function.name, index: i })
+      }
+    }
+  }
 
   while (true) {
     const { done, value } = await reader.read()
@@ -168,7 +187,12 @@ export async function streamChat({
           onToken?.(delta, full)
         }
         const tcDeltas = choice?.delta?.tool_calls ?? choice?.message?.tool_calls
-        if (tcDeltas) accumulateToolCalls(toolCalls, tcDeltas)
+        if (tcDeltas) {
+          accumulateToolCalls(toolCalls, tcDeltas)
+          // Fire the pill as soon as a call's name is known — mid-stream,
+          // before its arguments finish arriving.
+          announceStartedTools()
+        }
       } catch (err) {
         if (err instanceof HermesApiError) throw err
         // Ignore keep-alives / non-JSON frames.

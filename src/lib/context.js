@@ -63,5 +63,16 @@ export function buildSystemPrompt(agent, notes) {
       `to this conversation. Treat them as authoritative, up-to-date context about the current ` +
       `state of the business:\n\n${block}`
   }
+  // Always require visible chain-of-thought so the "Agent Thinking…" accordion
+  // has something to stream. The client parses <think>…</think> out of the
+  // response (lib/thinking.js) and renders it separately from the final answer.
+  sys += `\n\n---\n${THINK_INSTRUCTION}`
   return sys
 }
+
+// Mandatory reasoning-visibility instruction appended to every system prompt.
+export const THINK_INSTRUCTION =
+  'You MUST wrap your internal reasoning process inside <think>...</think> tags before ' +
+  'outputting your final answer. Put all step-by-step thinking, planning, and tool-use ' +
+  'rationale inside the <think> block, then write the user-facing answer after the closing ' +
+  '</think> tag. Never expose the <think> block content as part of the final answer.'

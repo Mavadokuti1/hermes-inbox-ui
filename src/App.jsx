@@ -56,6 +56,12 @@ export default function App() {
   // Pending tool-approval resolvers, keyed by tool_call id. The Approve/Deny
   // buttons resolve these promises to unblock the running tool loop.
   const approvalRef = useRef({})
+  // Decisions the user already made, keyed by tool_call id. Because the pill can
+  // now render (with Approve/Deny) the instant the tool name streams in — before
+  // the tool loop reaches requestApproval and registers a resolver — a fast
+  // click could otherwise be dropped and hang the loop. Recording the decision
+  // here lets requestApproval resolve immediately if it already happened.
+  const approvalDecisionsRef = useRef({})
 
   // Keep a ref of notes so handleSend always reads the latest without stale closure.
   useEffect(() => {
@@ -132,6 +138,26 @@ export default function App() {
     }))
   }
 
+  // Insert-or-update a tool_activity by call id. Used so the pill can appear the
+  // instant a tool_call name streams in (onToolStart) and then be enriched with
+  // its arguments/status when the tool loop reaches it — without duplicating.
+  function upsertActivity(id, callId, fields) {
+    patchSession(id, (s) => {
+      const exists = s.messages.some(
+        (m) => m.role === 'tool_activity' && m.callId === callId,
+      )
+      if (exists) {
+        return {
+          ...s,
+          messages: s.messages.map((m) =>
+            m.role === 'tool_activity' && m.callId === callId ? { ...m, ...fields } : m,
+          ),
+        }
+      }
+      return { ...s, messages: [...s.messages, { role: 'tool_activity', callId, ...fields }] }
+    })
+  }
+
   // Resolve a pending approval promise (Approve/Deny buttons in ToolActivity).
   function resolveApproval(callId, approved) {
     const resolve = approvalRef.current[callId]
@@ -142,11 +168,13 @@ export default function App() {
   }
 
   function handleApproveTool(callId) {
+    approvalDecisionsRef.current[callId] = true
     updateActivity(activeId, callId, { status: 'running' })
     resolveApproval(callId, true)
   }
 
   function handleDenyTool(callId) {
+    approvalDecisionsRef.current[callId] = false
     resolveApproval(callId, false)
   }
 
@@ -331,15 +359,22 @@ export default function App() {
         executeToolCall: (call) => composio.executeToolCall(call),
         requestApproval: (call) =>
           new Promise((resolve) => {
+            // If the user already clicked Approve/Deny on the pill (which can now
+            // render before we get here), honor that decision immediately.
+            const prior = approvalDecisionsRef.current[call.id]
+            if (prior !== undefined) {
+              resolve(prior)
+              return
+            }
             approvalRef.current[call.id] = resolve
           }),
         hooks: {
           onModelStart: () => appendToSession(id, { role: 'assistant', content: '', streaming: true }),
           onModelEnd: () => writeLast((m) => ({ ...m, streaming: false })),
           onToolCall: ({ call, write }) =>
-            appendToSession(id, {
-              role: 'tool_activity',
-              callId: call.id,
+            // Upsert: onToolStart may have already created this pill mid-stream;
+            // here we enrich it with the parsed arguments and confirm its status.
+            upsertActivity(id, call.id, {
               toolName: call.function?.name,
               args: parseToolArguments(call.function?.arguments),
               status: write ? 'pending_approval' : 'running',
@@ -361,6 +396,14 @@ export default function App() {
             tools,
             signal: controller.signal,
             onToken: (_delta, full) => writeLast((m) => ({ ...m, content: full })),
+            // Show the "⚙️ Executing […]" pill the instant the tool name streams
+            // in — before arguments finish. Read-only actions only: write actions
+            // wait for the loop's approval card so the user sees full arguments
+            // before approving an irreversible action.
+            onToolStart: ({ id: callId, name }) => {
+              if (composio.isWriteAction(name)) return
+              upsertActivity(id, callId, { toolName: name, args: {}, status: 'running', write: false })
+            },
           }),
       })
     } catch (err) {
@@ -378,6 +421,7 @@ export default function App() {
       setBusy(false)
       abortRef.current = null
       approvalRef.current = {}
+      approvalDecisionsRef.current = {}
       // Persist this turn to long-term memory (fire-and-forget; no-op until the
       // Zep backend proxy exists). Never blocks or throws into the UI.
       saveToZepGraph([userMsg], ZEP_USER_ID, {
