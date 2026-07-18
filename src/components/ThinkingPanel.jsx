@@ -15,17 +15,17 @@ export default function ThinkingPanel({ reasoning, thinking }) {
   if (!reasoning) return null
 
   return (
-    <div className="mb-2 overflow-hidden rounded-xl border border-amber-500/25 bg-amber-500/5">
+    <div className="mb-2 overflow-hidden rounded-2xl border border-amber-500/25 bg-amber-500/5">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-amber-400/90 transition hover:bg-amber-500/10"
+        className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-medium text-amber-600 transition hover:bg-amber-500/10 dark:text-amber-400/90"
       >
         <Brain size={14} className={thinking ? 'animate-pulse' : ''} />
         <span className="flex-1">{thinking ? 'Agent Thinking…' : 'Agent Thinking'}</span>
         {open ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
       </button>
       {open && (
-        <div className="whitespace-pre-wrap break-words border-t border-amber-500/20 px-3 py-2 text-[13px] leading-relaxed text-amber-200/70">
+        <div className="whitespace-pre-wrap break-words border-t border-amber-500/20 px-3 py-2 text-[13px] leading-relaxed text-amber-700/80 dark:text-amber-200/70">
           {reasoning}
           {thinking && <span className="stream-caret" />}
         </div>

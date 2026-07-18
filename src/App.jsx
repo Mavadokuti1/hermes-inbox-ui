@@ -39,6 +39,11 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [vaultOpen, setVaultOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [theme, setTheme] = useState(() =>
+    typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+      ? 'dark'
+      : 'light',
+  )
   const [view, setView] = useState('terminal') // 'terminal' | 'integrations'
   const [connections, setConnections] = useState([])
   const [connLoading, setConnLoading] = useState(false)
@@ -71,6 +76,19 @@ export default function App() {
   useEffect(() => saveSessions(sessions), [sessions])
   useEffect(() => saveSettings(settings), [settings])
   useEffect(() => saveMemory(notes), [notes])
+
+  // Theme: reflect light/dark onto <html> (Tailwind class strategy) + persist.
+  useEffect(() => {
+    const root = document.documentElement
+    root.classList.toggle('dark', theme === 'dark')
+    try {
+      localStorage.setItem('hermes.theme', theme)
+    } catch {
+      /* ignore storage errors */
+    }
+  }, [theme])
+
+  const toggleTheme = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))
 
   const configured = Boolean(settings.apiKey && settings.renderUrl)
   const activeSession = useMemo(
@@ -345,7 +363,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-[100dvh] w-full overflow-hidden bg-zinc-950 text-zinc-200">
+    <div className="flex h-[100dvh] w-full overflow-hidden bg-[#FDFAF3] text-ink transition-colors duration-300 dark:bg-navy dark:text-cloud">
       <Sidebar
         sessions={sessions}
         activeId={activeId}
@@ -386,6 +404,8 @@ export default function App() {
           onOpenSettings={() => setSettingsOpen(true)}
           connected={configured}
           composioEnabled={settings.composioEnabled}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
 
         {view === 'integrations' ? (
@@ -407,37 +427,29 @@ export default function App() {
             />
           </div>
         ) : (
-          <div className="grid min-h-0 flex-1 overflow-hidden lg:grid-cols-[minmax(0,1fr)_360px]">
-            <main className="flex min-w-0 flex-col overflow-hidden border-zinc-800 lg:border-r">
-              <ChatArea
-                session={activeSession}
-                agent={activeAgent}
-                busy={busy}
-                configured={configured}
-                onOpenSettings={() => setSettingsOpen(true)}
-                onApproveTool={handleApproveTool}
-                onDenyTool={handleDenyTool}
-              />
-              <Composer
-                onSend={handleSend}
-                onStop={handleStop}
-                busy={busy}
-                disabled={!configured || !activeSession}
-                accent={activeAgent?.accent}
-              />
-            </main>
-
-            {/* Docked Memory Vault — desktop only */}
-            <div className="hidden overflow-hidden lg:block">
-              <MemoryVault variant="docked" notes={notes} onChange={setNotes} />
-            </div>
-          </div>
+          <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+            <ChatArea
+              session={activeSession}
+              agent={activeAgent}
+              busy={busy}
+              configured={configured}
+              onOpenSettings={() => setSettingsOpen(true)}
+              onApproveTool={handleApproveTool}
+              onDenyTool={handleDenyTool}
+            />
+            <Composer
+              onSend={handleSend}
+              onStop={handleStop}
+              busy={busy}
+              disabled={!configured || !activeSession}
+              accent={activeAgent?.accent}
+            />
+          </main>
         )}
       </div>
 
-      {/* Mobile Memory Vault overlay */}
+      {/* Memory Vault — a floating right-side drawer over a dimmed backdrop. */}
       <MemoryVault
-        variant="overlay"
         open={vaultOpen}
         notes={notes}
         onChange={setNotes}

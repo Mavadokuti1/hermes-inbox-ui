@@ -1,9 +1,13 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
+  darkMode: 'class',
   theme: {
     extend: {
       fontFamily: {
+        // Fraunces drives every header (H1–H3, app title, agent names).
+        serif: ['Fraunces', 'ui-serif', 'Georgia', 'Cambria', 'Times New Roman', 'serif'],
+        display: ['Fraunces', 'ui-serif', 'Georgia', 'serif'],
         sans: [
           'Inter',
           'ui-sans-serif',
@@ -16,6 +20,18 @@ export default {
           'sans-serif',
         ],
         mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+      },
+      colors: {
+        // SureThing brand tokens
+        ink: '#1D1814', // body text (light)
+        navy: '#0B2340', // deep navy — headings (light) / global bg (dark)
+        cloud: '#E6EAEF', // body text (dark) / ghost borders (light)
+      },
+      borderRadius: {
+        glass: '22px',
+      },
+      boxShadow: {
+        glass: '0 10px 30px -18px rgba(11, 35, 64, 0.08)',
       },
       keyframes: {
         'fade-in': {
