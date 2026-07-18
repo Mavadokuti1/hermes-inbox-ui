@@ -56,16 +56,16 @@ export default function SettingsModal({ open, initial, onClose, onSave }) {
   }
 
   const inputCls =
-    'w-full rounded-xl border border-black/5 bg-white/60 px-3 py-2 text-sm text-navy outline-none transition placeholder:text-navy/40 focus:border-[#7A5FC9] dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-cloud/40 dark:focus:border-[#0B66E4]'
+    'w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink outline-none transition placeholder:text-ink/40 focus:border-ink/30 dark:border-white/10 dark:bg-[#191817] dark:text-white dark:placeholder:text-cloud/40 dark:focus:border-white/30'
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4">
       <div className="glass-card flex max-h-[90dvh] w-full max-w-md flex-col">
-        <div className="flex items-center justify-between border-b border-black/5 px-5 py-4 dark:border-white/10">
-          <h2 className="text-xl font-semibold">Settings</h2>
+        <div className="flex items-center justify-between border-b border-line px-5 py-4 dark:border-white/10">
+          <h2 className="text-xl font-bold">Settings</h2>
           <button
             onClick={onClose}
-            className="rounded-full p-1.5 text-navy/50 transition hover:bg-black/[0.04] hover:text-navy dark:text-cloud/50 dark:hover:bg-white/10 dark:hover:text-white"
+            className="rounded-lg p-1.5 text-ink/50 transition hover:bg-black/[0.04] hover:text-ink dark:text-cloud/50 dark:hover:bg-white/10 dark:hover:text-white"
           >
             <X size={18} />
           </button>
@@ -94,7 +94,7 @@ export default function SettingsModal({ open, initial, onClose, onSave }) {
               <button
                 type="button"
                 onClick={() => setShowKey((v) => !v)}
-                className="absolute inset-y-0 right-0 flex items-center px-3 text-navy/40 hover:text-navy dark:text-cloud/40 dark:hover:text-white"
+                className="absolute inset-y-0 right-0 flex items-center px-3 text-ink/40 hover:text-ink dark:text-cloud/40 dark:hover:text-white"
               >
                 {showKey ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
@@ -113,12 +113,12 @@ export default function SettingsModal({ open, initial, onClose, onSave }) {
 
           {testState.status !== 'idle' && (
             <div
-              className={`flex items-start gap-2 rounded-xl px-3 py-2 text-xs ${
+              className={`flex items-start gap-2 rounded-lg px-3 py-2 text-xs ${
                 testState.status === 'ok'
                   ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-300'
                   : testState.status === 'error'
                     ? 'bg-red-500/10 text-red-600 dark:text-red-300'
-                    : 'bg-black/[0.04] text-navy/60 dark:bg-white/5 dark:text-cloud/60'
+                    : 'bg-black/[0.04] text-ink/60 dark:bg-white/5 dark:text-cloud/60'
               }`}
             >
               {testState.status === 'loading' && <Loader2 size={14} className="mt-0.5 animate-spin" />}
@@ -131,34 +131,34 @@ export default function SettingsModal({ open, initial, onClose, onSave }) {
           )}
 
           {/* ---- Composio tooling ---- */}
-          <div className="border-t border-black/5 pt-4 dark:border-white/10">
+          <div className="border-t border-line pt-4 dark:border-white/10">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-gradient-to-br from-[#7A5FC9] to-[#0B66E4] text-white">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1A1A19] text-white dark:bg-white dark:text-[#1A1A19]">
                   <Plug size={14} />
                 </div>
-                <span className="font-serif text-base font-semibold text-navy dark:text-white">Composio Tools</span>
+                <span className="font-serif text-base font-bold text-ink dark:text-white">Composio Tools</span>
               </div>
               <button
                 type="button"
                 role="switch"
                 aria-checked={composioEnabled}
                 onClick={() => setComposioEnabled((v) => !v)}
-                className={`relative h-5 w-9 rounded-full transition ${composioEnabled ? 'bg-[#0B66E4]' : 'bg-navy/20 dark:bg-white/20'}`}
+                className={`relative h-5 w-9 rounded-full transition ${composioEnabled ? 'bg-[#1A1A19] dark:bg-white' : 'bg-ink/20 dark:bg-white/20'}`}
               >
                 <span
-                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition ${composioEnabled ? 'left-[18px]' : 'left-0.5'}`}
+                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-white transition dark:bg-[#1A1A19] ${composioEnabled ? 'left-[18px]' : 'left-0.5'}`}
                 />
               </button>
             </div>
-            <p className="mt-1.5 text-xs text-navy/50 dark:text-cloud/50">
+            <p className="mt-1.5 text-xs text-ink/50 dark:text-cloud/50">
               Let agents run real-world actions (email, social, GitHub…). Each agent uses its own
               scoped toolkits.
             </p>
 
             {composioEnabled && (
               <div className="mt-3 space-y-3">
-                <div className="flex items-start gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2.5 text-xs text-emerald-600 dark:text-emerald-300">
+                <div className="flex items-start gap-2 rounded-lg border border-emerald-500/25 bg-emerald-500/10 px-3 py-2.5 text-xs text-emerald-600 dark:text-emerald-300">
                   <ShieldCheck size={15} className="mt-0.5 shrink-0" />
                   <span>
                     <span className="font-semibold">Backend proxy mode.</span> Set{' '}
@@ -181,14 +181,14 @@ export default function SettingsModal({ open, initial, onClose, onSave }) {
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-2 border-t border-black/5 px-5 py-4 dark:border-white/10">
+        <div className="flex items-center justify-between gap-2 border-t border-line px-5 py-4 dark:border-white/10">
           <button onClick={testConnection} disabled={!renderUrl || !apiKey} className="btn-ghost text-sm">
             Test connection
           </button>
           <div className="flex items-center gap-2">
             <button
               onClick={onClose}
-              className="rounded-full px-4 py-2 text-sm font-medium text-navy/60 transition hover:bg-black/[0.04] hover:text-navy dark:text-cloud/60 dark:hover:bg-white/10 dark:hover:text-white"
+              className="rounded-lg px-4 py-2 text-sm font-medium text-ink/60 transition hover:bg-black/[0.04] hover:text-ink dark:text-cloud/60 dark:hover:bg-white/10 dark:hover:text-white"
             >
               Cancel
             </button>
@@ -205,7 +205,7 @@ export default function SettingsModal({ open, initial, onClose, onSave }) {
 function Field({ label, children }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block font-mono text-[10px] font-semibold uppercase tracking-wider text-navy/40 dark:text-cloud/40">
+      <span className="mb-1.5 block font-mono text-[10px] font-semibold uppercase tracking-wider text-ink/40 dark:text-cloud/40">
         {label}
       </span>
       {children}

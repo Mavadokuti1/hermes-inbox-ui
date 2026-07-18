@@ -4,7 +4,7 @@ import { connectionStatus, connectedSlugs, logoFor } from '../lib/toolkits'
 
 // The native "Integrations & Skills" hub.
 //   • App Catalog — a live, searchable view of Composio's 1,000+ apps, rendered
-//     as breathable, floating glassmorphic cards.
+//     as breathable, flat Manus cards.
 //   • Skills Matrix — assign any connected app to any sub-agent; the assignment
 //     feeds tool discovery, so an assigned app becomes callable by that agent.
 export default function IntegrationsView({
@@ -29,12 +29,12 @@ export default function IntegrationsView({
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#7A5FC9] to-[#0B66E4] text-white shadow-lg shadow-indigo-500/20">
+          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-[#1A1A19] text-white dark:bg-white dark:text-[#1A1A19]">
             <Plug size={20} />
           </div>
           <div className="flex-1">
-            <h1 className="text-2xl font-semibold tracking-tight">Integrations &amp; Skills</h1>
-            <p className="font-mono text-[11px] uppercase tracking-wide text-navy/40 dark:text-cloud/40">
+            <h1 className="text-2xl font-bold tracking-tight">Integrations &amp; Skills</h1>
+            <p className="font-mono text-[11px] uppercase tracking-wide text-ink/40 dark:text-cloud/40">
               1,000+ apps · connect &amp; assign to sub-agents
             </p>
           </div>
@@ -45,7 +45,7 @@ export default function IntegrationsView({
         </div>
 
         {offline && (
-          <div className="glass-card mt-6 flex items-start gap-2.5 border-amber-500/30 bg-amber-500/10 p-5 text-sm text-amber-700 dark:text-amber-300">
+          <div className="mt-6 flex items-start gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 p-5 text-sm text-amber-700 dark:text-amber-300">
             <AlertCircle size={16} className="mt-0.5 shrink-0" />
             <div className="flex-1">
               <p className="font-medium">Composio isn&apos;t enabled yet.</p>
@@ -60,7 +60,7 @@ export default function IntegrationsView({
         )}
 
         {error && !offline && (
-          <div className="glass-card mt-6 flex items-start gap-2.5 border-red-500/30 bg-red-500/10 p-4 text-sm text-red-600 dark:text-red-300">
+          <div className="mt-6 flex items-start gap-2.5 rounded-lg border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-600 dark:text-red-300">
             <AlertCircle size={16} className="mt-0.5 shrink-0" />
             <span className="break-words">{error}</span>
           </div>
@@ -124,20 +124,20 @@ function AppCatalog({ connections, connectingSlug, onConnect, onSearchCatalog })
 
   return (
     <div className="mt-8">
-      <h2 className="text-lg font-semibold">App Catalog</h2>
-      <p className="mb-4 text-sm text-navy/50 dark:text-cloud/50">
+      <h2 className="text-lg font-bold">App Catalog</h2>
+      <p className="mb-4 text-sm text-ink/50 dark:text-cloud/50">
         Search any of Composio&apos;s 1,000+ apps and connect it.
       </p>
 
       <div className="relative">
-        <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-navy/40 dark:text-cloud/40" />
+        <Search size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink/40 dark:text-cloud/40" />
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search apps — e.g. Discord, Shopify, Stripe, Notion…"
-          className="w-full rounded-full border border-black/5 bg-white/60 py-3 pl-10 pr-4 text-sm text-navy outline-none backdrop-blur-md transition placeholder:text-navy/40 focus:border-[#7A5FC9] focus:ring-2 focus:ring-[#7A5FC9]/20 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-cloud/40 dark:focus:border-[#0B66E4] dark:focus:ring-[#0B66E4]/30"
+          className="w-full rounded-lg border border-line bg-white py-3 pl-10 pr-4 text-sm text-ink outline-none transition placeholder:text-ink/40 focus:border-ink/30 dark:border-white/10 dark:bg-[#232221] dark:text-white dark:placeholder:text-cloud/40 dark:focus:border-white/30"
         />
-        {busy && <Loader2 size={16} className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-navy/40 dark:text-cloud/40" />}
+        {busy && <Loader2 size={16} className="absolute right-4 top-1/2 -translate-y-1/2 animate-spin text-ink/40 dark:text-cloud/40" />}
       </div>
 
       {err && <p className="mt-3 text-sm text-red-500">{err}</p>}
@@ -155,7 +155,7 @@ function AppCatalog({ connections, connectingSlug, onConnect, onSearchCatalog })
       </div>
 
       {!busy && !apps.length && !err && (
-        <p className="mt-4 text-sm text-navy/50 dark:text-cloud/50">No apps found. Try a different search.</p>
+        <p className="mt-4 text-sm text-ink/50 dark:text-cloud/50">No apps found. Try a different search.</p>
       )}
 
       {cursor && (
@@ -173,23 +173,23 @@ function AppCard({ app, status, connecting, onConnect }) {
   const [imgOk, setImgOk] = useState(true)
   const src = app.logo || logoFor(app.slug)
   return (
-    <div className="glass-card flex flex-col gap-4 p-7 transition hover:-translate-y-0.5 hover:shadow-lg">
+    <div className="glass-card flex flex-col gap-4 p-7 transition hover:-translate-y-0.5">
       <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-black/5 bg-white/70 dark:border-white/10 dark:bg-white/10">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-line bg-white dark:border-white/10 dark:bg-white/10">
           {imgOk ? (
             <img src={src} alt="" className="h-7 w-7 object-contain" onError={() => setImgOk(false)} />
           ) : (
-            <span className="font-mono text-sm uppercase text-navy/50 dark:text-cloud/50">{app.slug.slice(0, 2)}</span>
+            <span className="font-mono text-sm uppercase text-ink/50 dark:text-cloud/50">{app.slug.slice(0, 2)}</span>
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-serif text-base font-semibold text-navy dark:text-white">{app.name}</p>
-          <p className="truncate text-xs text-navy/50 dark:text-cloud/50">{app.description || app.slug}</p>
+          <p className="truncate font-serif text-base font-bold text-ink dark:text-white">{app.name}</p>
+          <p className="truncate text-xs text-ink/50 dark:text-cloud/50">{app.description || app.slug}</p>
         </div>
       </div>
 
       {status === 'active' ? (
-        <span className="flex items-center justify-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-300">
+        <span className="flex items-center justify-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-300">
           <Check size={15} /> Connected
         </span>
       ) : (
@@ -215,31 +215,30 @@ function AppCard({ app, status, connecting, onConnect }) {
 
 /* ------------------------------ Skills Matrix ----------------------------- */
 
-// Assign connected apps to sub-agents. Columns are the union of every ACTIVE
-// connection and anything already assigned, so a tool never silently vanishes.
+// Assign connected apps to sub-agents. Columns are driven purely by the user's
+// ACTUAL active connections from Composio — connect Slack and a Slack column
+// appears here automatically; there are no hardcoded/phantom columns.
 function SkillsMatrix({ connections, agents, assignments, onToggleAssignment }) {
-  const cols = []
-  const push = (s) => s && !cols.includes(s) && cols.push(s)
-  connectedSlugs(connections).forEach(push)
-  for (const a of agents) for (const s of assignments[a.id] || []) push(s)
+  const cols = connectedSlugs(connections)
 
   return (
     <div className="mt-10">
-      <h2 className="text-lg font-semibold">Skills Matrix</h2>
-      <p className="mb-4 text-sm text-navy/50 dark:text-cloud/50">
-        Toggle which connected apps each sub-agent can use. Assignments take effect on their next message.
+      <h2 className="text-lg font-bold">Skills Matrix</h2>
+      <p className="mb-4 text-sm text-ink/50 dark:text-cloud/50">
+        Toggle which connected apps each sub-agent can use. Columns reflect your live connections —
+        connect a new app above and it appears here. Assignments take effect on their next message.
       </p>
 
       {!cols.length ? (
-        <div className="glass-card border-dashed p-8 text-center text-sm text-navy/50 dark:text-cloud/50">
-          No connected apps yet. Connect one from the catalog above to start assigning skills.
+        <div className="glass-card border-dashed p-8 text-center text-sm text-ink/50 dark:text-cloud/50">
+          No connected apps yet. Connect one from the catalog above and it will appear here as a column.
         </div>
       ) : (
         <div className="glass-card overflow-x-auto p-2">
           <table className="w-full border-collapse text-sm">
             <thead>
-              <tr className="border-b border-black/5 dark:border-white/10">
-                <th className="sticky left-0 z-10 px-4 py-3 text-left font-mono text-[10px] font-semibold uppercase tracking-wider text-navy/40 backdrop-blur-md dark:text-cloud/40">
+              <tr className="border-b border-line dark:border-white/10">
+                <th className="sticky left-0 z-10 bg-white px-4 py-3 text-left font-mono text-[10px] font-semibold uppercase tracking-wider text-ink/40 dark:bg-[#232221] dark:text-cloud/40">
                   Agent
                 </th>
                 {cols.map((slug) => (
@@ -253,7 +252,7 @@ function SkillsMatrix({ connections, agents, assignments, onToggleAssignment }) 
                           e.currentTarget.style.display = 'none'
                         }}
                       />
-                      <span className="max-w-[3.5rem] truncate font-mono text-[10px] text-navy/50 dark:text-cloud/50">{slug}</span>
+                      <span className="max-w-[3.5rem] truncate font-mono text-[10px] text-ink/50 dark:text-cloud/50">{slug}</span>
                     </span>
                   </th>
                 ))}
@@ -264,13 +263,13 @@ function SkillsMatrix({ connections, agents, assignments, onToggleAssignment }) 
                 const AIcon = a.icon
                 const owned = new Set(assignments[a.id] || [])
                 return (
-                  <tr key={a.id} className="border-b border-black/5 last:border-0 dark:border-white/5">
-                    <td className="sticky left-0 z-10 whitespace-nowrap px-4 py-3 backdrop-blur-md">
+                  <tr key={a.id} className="border-b border-line last:border-0 dark:border-white/5">
+                    <td className="sticky left-0 z-10 whitespace-nowrap bg-white px-4 py-3 dark:bg-[#232221]">
                       <span className="flex items-center gap-2">
-                        <span className={`flex h-7 w-7 items-center justify-center rounded-xl ${a.accent.avatar}`}>
+                        <span className={`flex h-7 w-7 items-center justify-center rounded-md ${a.accent.avatar}`}>
                           {AIcon ? <AIcon size={14} /> : null}
                         </span>
-                        <span className="font-medium text-navy dark:text-white">{a.name}</span>
+                        <span className="font-medium text-ink dark:text-white">{a.name}</span>
                       </span>
                     </td>
                     {cols.map((slug) => {
@@ -280,10 +279,10 @@ function SkillsMatrix({ connections, agents, assignments, onToggleAssignment }) 
                           <button
                             onClick={() => onToggleAssignment(a.id, slug)}
                             title={on ? `Remove ${slug} from ${a.name}` : `Assign ${slug} to ${a.name}`}
-                            className={`inline-flex h-7 w-7 items-center justify-center rounded-xl border transition ${
+                            className={`inline-flex h-7 w-7 items-center justify-center rounded-md border transition ${
                               on
-                                ? 'border-emerald-500/40 bg-emerald-500/20 text-emerald-600 dark:text-emerald-300'
-                                : 'border-black/10 bg-white/40 text-transparent hover:border-black/20 hover:text-navy/30 dark:border-white/10 dark:bg-white/5 dark:hover:text-white/30'
+                                ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-600 dark:text-emerald-300'
+                                : 'border-line bg-white text-transparent hover:border-ink/20 hover:text-ink/30 dark:border-white/10 dark:bg-white/5 dark:hover:text-white/30'
                             }`}
                           >
                             <Check size={14} />

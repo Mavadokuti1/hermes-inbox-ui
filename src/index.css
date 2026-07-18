@@ -10,27 +10,30 @@ body,
 }
 
 /* ----------------------------------------------------------------------------
-   SureThing design system — Light (default) & Dark themes.
-   Light : off-white canvas, deep-navy headings, warm ink body text.
-   Dark  : deep-navy canvas, white headings, cloud body text.
+   Manus design system — minimalist, intellectual, flat.
+   Light : off-white canvas (#F8F8F7), pure-white cards with hairline borders,
+           near-black ink, serif (Libre Baskerville) headers.
+   Dark  : charcoal canvas, slightly-lifted cards, light ink. (Kept functional
+           so the header toggle never breaks; primary buttons invert for
+           contrast.)
    Dark mode is class-based (`.dark` on <html>), toggled from the header.
 ---------------------------------------------------------------------------- */
 @layer base {
   body {
-    @apply bg-[#FDFAF3] font-sans text-ink antialiased;
+    @apply bg-canvas font-sans text-ink antialiased;
     overscroll-behavior-y: none;
   }
   .dark body {
-    @apply bg-navy text-cloud;
+    @apply bg-[#191817] text-cloud;
   }
 
-  /* Fraunces drives every heading. */
+  /* Libre Baskerville drives every heading. */
   h1,
   h2,
   h3,
   h4 {
-    @apply font-serif text-navy;
-    letter-spacing: -0.01em;
+    @apply font-serif font-bold text-ink;
+    letter-spacing: -0.005em;
   }
   .dark h1,
   .dark h2,
@@ -41,28 +44,30 @@ body,
 }
 
 @layer components {
-  /* Glassmorphic surface — Vault, Integration cards, panes, modals. */
+  /* Manus surface — flat white card with a thin border and 8px radius.
+     (Class name kept as `glass-card` so every existing usage remaps cleanly.) */
   .glass-card {
-    @apply rounded-glass border border-white/60 bg-white/50 shadow-glass backdrop-blur-md;
+    @apply rounded-glass border border-line bg-white;
   }
   .dark .glass-card {
-    @apply border-white/10 bg-white/5 shadow-xl;
+    @apply border-white/10 bg-[#232221];
   }
 
-  /* Primary pill CTA — Send, Connect, Save. */
+  /* Primary CTA — solid dark. Inverts to a light button in dark mode so it
+     stays legible on the charcoal canvas. */
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-full bg-[#3D2E3D] px-6 py-2
-           font-medium text-white transition hover:opacity-90
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#1A1A19] px-4 py-2
+           font-medium text-white transition hover:bg-[#0F0F0F]
            disabled:cursor-not-allowed disabled:opacity-40;
   }
   .dark .btn-primary {
-    @apply bg-[#0B66E4];
+    @apply bg-white text-[#1A1A19] hover:bg-white/90;
   }
 
-  /* Secondary / ghost button. */
+  /* Secondary / ghost button — transparent with a hairline border. */
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-cloud
-           bg-transparent px-4 py-1.5 font-medium text-navy transition hover:bg-black/[0.03]
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-line
+           bg-transparent px-4 py-1.5 font-medium text-ink transition hover:bg-black/[0.03]
            disabled:cursor-not-allowed disabled:opacity-40;
   }
   .dark .btn-ghost {
@@ -70,8 +75,7 @@ body,
   }
 }
 
-/* Breathable canvas — the old technical grid is retired; panes now rest on the
-   global background so the glass surfaces can float. */
+/* Panes rest directly on the global canvas. */
 .deck-grid {
   background-color: transparent;
 }
@@ -85,19 +89,19 @@ body,
   }
 }
 
-/* Soft themed scrollbar */
+/* Soft neutral scrollbar */
 *::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 *::-webkit-scrollbar-thumb {
   @apply rounded-full;
-  background-color: rgba(11, 35, 64, 0.18);
+  background-color: rgba(26, 26, 25, 0.16);
   border: 2px solid transparent;
   background-clip: content-box;
 }
 *::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(11, 35, 64, 0.3);
+  background-color: rgba(26, 26, 25, 0.28);
   background-clip: content-box;
 }
 .dark *::-webkit-scrollbar-thumb {
@@ -111,7 +115,7 @@ body,
 
 /* Typing indicator dots */
 .typing-dot {
-  @apply inline-block h-2 w-2 rounded-full bg-navy/40;
+  @apply inline-block h-2 w-2 rounded-full bg-ink/40;
   animation: typing 1.2s infinite ease-in-out;
 }
 .dark .typing-dot {
@@ -173,13 +177,13 @@ body,
   @apply text-cloud;
 }
 .md-body h1 {
-  @apply mb-2 mt-1 font-serif text-lg font-semibold;
+  @apply mb-2 mt-1 font-serif text-lg font-bold;
 }
 .md-body h2 {
-  @apply mb-1.5 mt-3 font-serif text-base font-semibold;
+  @apply mb-1.5 mt-3 font-serif text-base font-bold;
 }
 .md-body h3 {
-  @apply mb-1 mt-2.5 font-serif text-sm font-semibold;
+  @apply mb-1 mt-2.5 font-serif text-sm font-bold;
 }
 .md-body p {
   @apply my-2;
@@ -194,19 +198,19 @@ body,
   @apply my-0.5;
 }
 .md-body a {
-  @apply font-medium text-[#7A5FC9] underline;
+  @apply font-medium text-ink underline underline-offset-2;
 }
 .dark .md-body a {
-  @apply text-[#6FA8FF];
+  @apply text-white;
 }
 .md-body code {
-  @apply rounded bg-black/5 px-1 py-0.5 font-mono text-[12.5px] text-[#7A5FC9];
+  @apply rounded bg-black/[0.05] px-1 py-0.5 font-mono text-[12.5px] text-ink;
 }
 .dark .md-body code {
-  @apply bg-white/10 text-[#9FC2FF];
+  @apply bg-white/10 text-cloud;
 }
 .md-body pre {
-  @apply my-2 overflow-x-auto rounded-xl border border-black/5 bg-black/[0.04] p-3 text-[12.5px];
+  @apply my-2 overflow-x-auto rounded-lg border border-line bg-black/[0.03] p-3 text-[12.5px];
 }
 .dark .md-body pre {
   @apply border-white/10 bg-black/30;

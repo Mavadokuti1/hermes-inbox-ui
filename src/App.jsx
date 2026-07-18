@@ -13,6 +13,7 @@ import { createComposioAdapter, parseToolArguments } from './lib/composio'
 import { AGENTS, getAgent, DEFAULT_AGENT_ID } from './lib/agents'
 import { splitThinking } from './lib/thinking'
 import { topRelevantNotes, buildSystemPrompt } from './lib/context'
+import { saveToZepGraph, fetchZepContext } from './lib/memory'
 import {
   loadSettings,
   saveSettings,
@@ -274,7 +275,23 @@ export default function App() {
     // Build the API payload: agent system prompt + top-3 relevant memory notes,
     // then the conversation history (assistant reasoning tags stripped).
     const relevant = topRelevantNotes(notesRef.current, text, 3)
-    const systemContent = buildSystemPrompt(agent, relevant)
+    // Long-term memory (Zep) — best-effort hook; returns [] until the backend
+    // proxy exists, and never throws into the chat loop.
+    const ZEP_USER_ID = 'local-user' // TODO(zep): use the Clerk user id once auth is wired
+    let zepFacts = []
+    try {
+      zepFacts = await fetchZepContext(ZEP_USER_ID, {
+        renderUrl: settings.renderUrl,
+        apiKey: settings.apiKey,
+      })
+    } catch {
+      /* never block chat on memory */
+    }
+    const systemContent =
+      buildSystemPrompt(agent, relevant) +
+      (zepFacts.length
+        ? '\n\n# Long-term memory\n' + zepFacts.map((f) => `- ${f.fact || ''}`).join('\n')
+        : '')
     const history = [...activeSession.messages, userMsg]
       .filter((m) => m.role === 'user' || m.role === 'assistant')
       .map((m) => ({
@@ -361,11 +378,17 @@ export default function App() {
       setBusy(false)
       abortRef.current = null
       approvalRef.current = {}
+      // Persist this turn to long-term memory (fire-and-forget; no-op until the
+      // Zep backend proxy exists). Never blocks or throws into the UI.
+      saveToZepGraph([userMsg], ZEP_USER_ID, {
+        renderUrl: settings.renderUrl,
+        apiKey: settings.apiKey,
+      }).catch(() => {})
     }
   }
 
   return (
-    <div className="flex h-[100dvh] w-full overflow-hidden bg-[#FDFAF3] text-ink transition-colors duration-300 dark:bg-navy dark:text-cloud">
+    <div className="flex h-[100dvh] w-full overflow-hidden bg-canvas text-ink transition-colors duration-300 dark:bg-[#191817] dark:text-cloud">
       <Sidebar
         sessions={sessions}
         activeId={activeId}

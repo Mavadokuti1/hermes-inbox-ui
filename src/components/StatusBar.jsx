@@ -17,10 +17,10 @@ export default function StatusBar({
 }) {
   const toolkits = agent?.toolkits || []
   const iconBtn =
-    'shrink-0 rounded-full p-2 text-navy/60 transition hover:bg-black/[0.04] hover:text-navy dark:text-cloud/60 dark:hover:bg-white/10 dark:hover:text-white'
+    'shrink-0 rounded-lg p-2 text-ink/60 transition hover:bg-black/[0.04] hover:text-ink dark:text-cloud/60 dark:hover:bg-white/10 dark:hover:text-white'
 
   return (
-    <header className="flex items-center gap-2 border-b border-black/5 bg-white/40 px-3 py-2.5 backdrop-blur-md dark:border-white/10 dark:bg-white/5 sm:px-4">
+    <header className="flex items-center gap-2 border-b border-line bg-white px-3 py-2.5 dark:border-white/10 dark:bg-[#191817] sm:px-4">
       {/* Hamburger — mobile only */}
       <button onClick={onOpenSidebar} className={`-ml-1 md:hidden ${iconBtn}`} title="Menu">
         <Menu size={20} />
@@ -32,30 +32,30 @@ export default function StatusBar({
       </div>
 
       {/* Divider */}
-      <div className="hidden h-6 w-px shrink-0 bg-black/10 dark:bg-white/10 sm:block" />
+      <div className="hidden h-6 w-px shrink-0 bg-line dark:bg-white/10 sm:block" />
 
       {/* Live toolset readout */}
       <div className="hidden min-w-0 flex-1 items-center gap-2 sm:flex">
-        <Wrench size={13} className="shrink-0 text-navy/40 dark:text-cloud/40" />
+        <Wrench size={13} className="shrink-0 text-ink/40 dark:text-cloud/40" />
         {composioEnabled ? (
           toolkits.length ? (
             <div className="flex min-w-0 items-center gap-1.5 overflow-hidden">
               {toolkits.map((t) => (
                 <span
                   key={t}
-                  className="shrink-0 rounded-full border border-black/5 bg-white/60 px-2.5 py-0.5 font-mono text-[10.5px] uppercase tracking-wide text-navy/70 dark:border-white/10 dark:bg-white/5 dark:text-cloud/70"
+                  className="shrink-0 rounded-full border border-line bg-black/[0.02] px-2.5 py-0.5 font-mono text-[10.5px] uppercase tracking-wide text-ink/70 dark:border-white/10 dark:bg-white/5 dark:text-cloud/70"
                 >
                   {t}
                 </span>
               ))}
             </div>
           ) : (
-            <span className="font-mono text-[11px] text-navy/40 dark:text-cloud/40">
+            <span className="font-mono text-[11px] text-ink/40 dark:text-cloud/40">
               no toolkits mapped
             </span>
           )
         ) : (
-          <span className="font-mono text-[11px] text-navy/40 dark:text-cloud/40">
+          <span className="font-mono text-[11px] text-ink/40 dark:text-cloud/40">
             composio · offline
           </span>
         )}
@@ -65,7 +65,7 @@ export default function StatusBar({
       <div className="flex-1 sm:hidden" />
 
       {/* System status */}
-      <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-black/5 bg-white/50 px-2.5 py-1 dark:border-white/10 dark:bg-white/5">
+      <div className="flex shrink-0 items-center gap-1.5 rounded-full border border-line bg-black/[0.02] px-2.5 py-1 dark:border-white/10 dark:bg-white/5">
         {connected ? (
           <>
             <Circle size={8} className="pulse-dot fill-emerald-500 text-emerald-500" />
@@ -75,8 +75,8 @@ export default function StatusBar({
           </>
         ) : (
           <>
-            <Circle size={8} className="fill-navy/30 text-navy/30 dark:fill-white/30 dark:text-white/30" />
-            <span className="hidden font-mono text-[10.5px] uppercase tracking-wide text-navy/40 dark:text-cloud/40 sm:inline">
+            <Circle size={8} className="fill-ink/30 text-ink/30 dark:fill-white/30 dark:text-white/30" />
+            <span className="hidden font-mono text-[10.5px] uppercase tracking-wide text-ink/40 dark:text-cloud/40 sm:inline">
               offline
             </span>
           </>

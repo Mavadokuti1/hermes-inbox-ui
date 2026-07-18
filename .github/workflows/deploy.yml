@@ -26,6 +26,10 @@ jobs:
         run: npm ci || npm install
       - name: Build
         run: npm run build
+        env:
+          # Optional: set this repo secret to enable Clerk auth on the deployed
+          # site. When unset, the app builds and runs ungated (no white-screen).
+          VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

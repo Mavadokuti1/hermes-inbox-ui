@@ -5,33 +5,36 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        // Fraunces drives every header (H1–H3, app title, agent names).
-        serif: ['Fraunces', 'ui-serif', 'Georgia', 'Cambria', 'Times New Roman', 'serif'],
-        display: ['Fraunces', 'ui-serif', 'Georgia', 'serif'],
+        // Libre Baskerville drives every header (H1–H3, app title, agent names).
+        serif: ['"Libre Baskerville"', 'ui-serif', 'Georgia', 'Cambria', 'Times New Roman', 'serif'],
+        display: ['"Libre Baskerville"', 'ui-serif', 'Georgia', 'serif'],
+        // Body / UI uses the native system stack (Manus aesthetic).
         sans: [
-          'Inter',
-          'ui-sans-serif',
-          'system-ui',
           '-apple-system',
-          'Segoe UI',
+          'BlinkMacSystemFont',
+          '"Segoe UI"',
           'Roboto',
-          'Helvetica Neue',
+          'Helvetica',
           'Arial',
           'sans-serif',
         ],
         mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
       },
       colors: {
-        // SureThing brand tokens
-        ink: '#1D1814', // body text (light)
-        navy: '#0B2340', // deep navy — headings (light) / global bg (dark)
-        cloud: '#E6EAEF', // body text (dark) / ghost borders (light)
+        // Manus design tokens (repurposed so existing utilities remap cleanly).
+        ink: '#1A1A19', // near-black — body text & primary surfaces (light)
+        navy: '#1A1A19', // headings (light) / used as dark canvas base
+        cloud: '#E5E7EB', // hairline borders (light) / body text (dark)
+        canvas: '#F8F8F7', // global off-white canvas (light)
+        line: '#E5E7EB', // card hairline border (light)
       },
       borderRadius: {
-        glass: '22px',
+        // Manus cards/panes use an 8px radius (flat, minimal).
+        glass: '8px',
       },
       boxShadow: {
-        glass: '0 10px 30px -18px rgba(11, 35, 64, 0.08)',
+        // Manus is flat — no soft glass shadow.
+        glass: 'none',
       },
       keyframes: {
         'fade-in': {
